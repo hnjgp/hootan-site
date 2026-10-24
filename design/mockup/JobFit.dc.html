@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Job-fit check — Hootan Seifi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Caveat:wght@500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Vazirmatn:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F3EBDD}
+.theme-light{--bg:#F3EBDD;--card:#FFFDF8;--ink:#1E1C1A;--muted:#4A453E;--line:#1E1C1A;--soft:#E6DCC9;--accent:#A8420C;--inv:#1E1C1A;--invInk:#F3EBDD;--green:#1F6B4E;--input:#FFFFFF}
+.theme-dark{--bg:#15161C;--card:#1F212A;--ink:#EDE6D8;--muted:#B5AEA1;--line:#CFC7B8;--soft:#2C2F3A;--accent:#F2914F;--inv:#EDE6D8;--invInk:#15161C;--green:#6FD3A8;--input:#15161C}
+a{color:var(--accent)}a:hover{opacity:.8}
+.lang-en{font-family:'DM Sans',system-ui,sans-serif}
+.lang-fa{font-family:'Vazirmatn',system-ui,sans-serif}
+.hand{font-family:'Caveat',cursive}
+.lang-fa .hand{font-family:'Vazirmatn',sans-serif;font-weight:600;font-size:.7em !important}
+.lang-fa h1{letter-spacing:0 !important;line-height:1.35 !important}
+.root{transition:background-color .4s ease,color .4s ease}
+.btn{transition:transform .12s ease}
+.btn:hover{transform:translate(-1px,-1px)}
+.btn:active{transform:scale(.96)}
+.chip:hover{background:var(--inv) !important;color:var(--invInk) !important}
+.pop{animation:pop .4s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.85) translateY(10px)}to{opacity:1;transform:none}}
+.d1{animation-delay:.1s}.d2{animation-delay:.25s}.d3{animation-delay:.4s}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.float{animation:float 6s ease-in-out infinite}
+.float.f2{animation-duration:7.2s;animation-delay:-2s}
+.float.f3{animation-duration:8.1s;animation-delay:-4s}
+@keyframes float{0%,100%{translate:0 0;rotate:0deg}33%{translate:0 -6px;rotate:-.3deg}66%{translate:0 3px;rotate:.25deg}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div class="{{ rootClass }}" dir="{{ dir }}" lang="{{ lang }}" style="min-height: 100%; background: var(--bg); color: var(--ink)">
+
+<header style="border-bottom: 1.5px solid var(--line)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none">
+<img src="/_blob/5407446f62e6cbed748eef90818eb767" alt="" style="width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line)">
+<div style="font-weight: 600; font-size: 16px">{{ t.name }}</div>
+</a>
+<nav aria-label="Site mode" style="display: flex; padding: 4px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--card)">
+<a href="Main.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; background: var(--inv); color: var(--invInk); text-decoration: none; font-weight: 600; font-size: 14px">{{ t.portfolio }}</a>
+<a href="Trading.dc.html" class="btn" style="display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px; border-radius: 999px; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 14px"><span class="pulse" aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #E8692A"></span>{{ t.trading }}</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 8px">
+<button type="button" class="btn" onClick="{{ toggleTheme }}" aria-label="{{ t.themeLabel }}" style="width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"></path></svg></sc-if>
+<sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+</button>
+<div role="group" aria-label="Language" style="display: flex; padding: 3px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--card)">
+<sc-if value="{{ enOn }}" hint-placeholder-val="{{ true }}">
+<button type="button" aria-pressed="true" style="min-height: 34px; min-width: 40px; border-radius: 999px; border: 0; background: var(--inv); color: var(--invInk); font-weight: 700; font-size: 13px">EN</button>
+<button type="button" class="btn" aria-pressed="false" onClick="{{ setFa }}" style="min-height: 34px; min-width: 40px; border-radius: 999px; border: 0; background: transparent; color: var(--ink); font-family: 'Vazirmatn', sans-serif; font-weight: 700; font-size: 14px">فا</button>
+</sc-if>
+<sc-if value="{{ faOn }}" hint-placeholder-val="{{ false }}">
+<button type="button" class="btn" aria-pressed="false" onClick="{{ setEn }}" style="min-height: 34px; min-width: 40px; border-radius: 999px; border: 0; background: transparent; color: var(--ink); font-weight: 700; font-size: 13px">EN</button>
+<button type="button" aria-pressed="true" style="min-height: 34px; min-width: 40px; border-radius: 999px; border: 0; background: var(--inv); color: var(--invInk); font-family: 'Vazirmatn', sans-serif; font-weight: 700; font-size: 14px">فا</button>
+</sc-if>
+</div>
+<a href="#resume" class="btn" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: #E8692A; color: #1E1C1A; border: 1.5px solid var(--line); text-decoration: none; font-weight: 700; font-size: 15px">{{ t.resume }}</a>
+</div>
+</div>
+</header>
+
+<main style="max-width: 1200px; margin: 0 auto; padding: 32px 24px 56px">
+<a href="Main.dc.html" style="font-size: 15px; text-decoration: none">{{ t.back }}</a>
+<div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center">
+<img src="/_blob/5407446f62e6cbed748eef90818eb767" alt="" style="width: 76px; height: 76px; border-radius: 50%; border: 1.5px solid var(--line)">
+<div style="flex: 1 1 400px; min-width: 0">
+<div class="hand" style="font-size: 25px; color: var(--accent)">{{ t.tag }}</div>
+<h1 style="margin: 0; font-size: 42px; line-height: 1.1; font-weight: 700; letter-spacing: -0.5px">{{ t.h1 }}</h1>
+</div>
+</div>
+<p style="margin: 14px 0 28px; font-size: 17px; line-height: 1.7; color: var(--muted); max-width: 700px">{{ t.sub }}</p>
+
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<form class="float f2" style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 18px; background: var(--card); border: 1.5px solid var(--line)">
+<label for="jd" style="font-weight: 700; font-size: 15px">{{ t.label }}</label>
+<textarea id="jd" rows="12" style="width: 100%; box-sizing: border-box; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); font-family: inherit; font-size: 14px; line-height: 1.7; resize: vertical; background: var(--input); color: var(--ink); white-space: pre-wrap">{{ t.jd }}</textarea>
+<sc-if value="{{ idle }}" hint-placeholder-val="{{ true }}"><button type="button" class="btn" onClick="{{ run }}" style="width: 100%; min-height: 50px; border-radius: 12px; background: #E8692A; color: #1E1C1A; border: 1.5px solid var(--line); font-weight: 700; font-size: 15px; font-family: inherit">{{ t.check }}</button></sc-if>
+<sc-if value="{{ running }}" hint-placeholder-val="{{ false }}"><div style="min-height: 50px; border-radius: 12px; background: var(--inv); color: var(--invInk); display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 15px"><span class="spin" aria-hidden="true" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--invInk); border-top-color: transparent"></span>{{ t.analyzing }}</div></sc-if>
+<div style="font-size: 13px; color: var(--muted); line-height: 1.6">{{ t.note }}</div>
+</form>
+
+<section aria-label="{{ t.resultLabel }}" aria-live="polite" style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<div class="float" style="display: flex; flex-wrap: wrap; gap: 22px; align-items: center; padding: 24px; border-radius: 18px; background: var(--card); border: 2px solid var(--line); box-shadow: 5px 5px 0 var(--line)">
+<div style="position: relative; width: 120px; height: 120px">
+<svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true" style="transform: rotate(-90deg)">
+<circle cx="60" cy="60" r="50" fill="none" stroke="var(--soft)" stroke-width="12"></circle>
+<circle cx="60" cy="60" r="50" fill="none" stroke="#E8692A" stroke-width="12" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="{{ dash }}" style="transition: stroke-dashoffset .1s linear"></circle>
+</svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center">
+<div style="font-size: 36px; font-weight: 700">{{ scoreText }}</div>
+<div style="font-size: 12px; color: var(--muted)">{{ t.of }}</div>
+</div>
+</div>
+<div style="flex: 1 1 260px; min-width: 0">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted)">{{ t.sample }}</div>
+<div style="font-size: 21px; font-weight: 700; margin: 6px 0">{{ t.verdict }}</div>
+<div style="font-size: 15px; color: var(--muted); line-height: 1.7">{{ t.verdictText }}</div>
+</div>
+</div>
+<sc-if value="{{ showDetails }}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
+<div class="pop d1" style="padding: 20px; border-radius: 16px; background: var(--card); border: 1.5px solid var(--line)">
+<div class="hand" style="font-size: 23px; color: var(--green); margin-bottom: 6px">{{ t.strengths }}</div>
+<ul style="margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.55">
+<li>{{ t.st1 }}</li><li>{{ t.st2 }}</li><li>{{ t.st3 }}</li>
+</ul>
+</div>
+<div class="pop d2" style="padding: 20px; border-radius: 16px; background: var(--card); border: 1.5px solid var(--line)">
+<div class="hand" style="font-size: 23px; color: var(--accent); margin-bottom: 6px">{{ t.gaps }}</div>
+<ul style="margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.55">
+<li>{{ t.g1 }}</li><li>{{ t.g2 }}</li>
+</ul>
+</div>
+</div>
+<div class="pop d3" style="padding: 20px; border-radius: 16px; border: 1.5px dashed var(--line)">
+<div class="hand" style="font-size: 23px; margin-bottom: 6px">{{ t.ask }}</div>
+<ol style="margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.55">
+<li>{{ t.a1 }}</li><li>{{ t.a2 }}</li>
+</ol>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<a href="Twin.dc.html" class="btn chip" style="display: inline-flex; align-items: center; min-height: 46px; padding: 0 18px; border-radius: 999px; border: 1.5px solid var(--line); color: var(--ink); text-decoration: none; font-size: 15px">{{ t.follow }}</a>
+<a href="#contact" class="btn" style="display: inline-flex; align-items: center; min-height: 46px; padding: 0 18px; border-radius: 999px; background: var(--inv); color: var(--invInk); text-decoration: none; font-weight: 700; font-size: 15px">{{ t.call }}</a>
+</div>
+</sc-if>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+const T = {
+en: {
+name: "Hootan Seifi", portfolio: "Portfolio", trading: "AI Trading Floor", resume: "Download résumé", back: "← Back to portfolio", themeLabel: "Switch light or dark mode",
+tag: "honest, not flattering", h1: "Am I a fit for your role?",
+sub: "Paste a job description. You'll get a score against my real experience, including what I'm missing.",
+label: "Job description",
+jd: "AI Engineer — LLM & Agents\n[COMPANY] · Hybrid\n\nRequirements:\n- Python, FastAPI\n- RAG and vector databases\n- Agent frameworks (LangGraph or similar)\n- 2+ years shipping software in production\n- Kubernetes is a plus",
+check: "Check my fit", analyzing: "Comparing with my experience…", note: "A copy goes to Hootan so he can follow up. Nothing else is stored.",
+resultLabel: "Result", of: "/ 100", sample: "SAMPLE RESULT",
+verdict: "Strong technical match, light on team experience",
+verdictText: "Every core skill is backed by a deployed project. The main gap is years inside a professional engineering team.",
+strengths: "strengths", st1: "Python + FastAPI in deployed projects", st2: "Agentic RAG with pgvector (Astra)", st3: "Multi-agent LangGraph system (Trading Floor)",
+gaps: "gaps", g1: "No years yet in a professional software team", g2: "No Kubernetes in shipped work",
+ask: "worth asking him", a1: "How do the trading agents stay inside risk limits?", a2: "How did you evaluate answer quality before deploying?",
+follow: "Ask the twin a follow-up", call: "Book a call"
+},
+fa: {
+name: "هوتن سیفی", portfolio: "پورتفولیو", trading: "میز ترید هوش مصنوعی", resume: "دانلود رزومه", back: "→ بازگشت به پورتفولیو", themeLabel: "تغییر حالت روشن یا تاریک",
+tag: "صادقانه، نه تعریف و تمجید", h1: "آیا من برای این موقعیت مناسبم؟",
+sub: "آگهی شغلی را وارد کنید. نمره‌ای بر اساس تجربه‌ی واقعی من می‌گیرید، از جمله چیزهایی که کم دارم.",
+label: "آگهی شغلی",
+jd: "مهندس هوش مصنوعی — LLM و ایجنت\n[نام شرکت] · ترکیبی\n\nالزامات:\n- پایتون، FastAPI\n- RAG و پایگاه‌داده‌های برداری\n- فریم‌ورک‌های ایجنت (LangGraph یا مشابه)\n- حداقل ۲ سال تجربه‌ی انتشار نرم‌افزار\n- آشنایی با Kubernetes مزیت است",
+check: "بررسی تناسب", analyzing: "در حال مقایسه با تجربه‌ی من…", note: "یک نسخه برای هوتن ارسال می‌شود تا پیگیری کند. چیز دیگری ذخیره نمی‌شود.",
+resultLabel: "نتیجه", of: "از ۱۰۰", sample: "نتیجه‌ی نمونه",
+verdict: "تطابق فنی قوی، تجربه‌ی تیمی کم",
+verdictText: "هر مهارت اصلی با یک پروژه‌ی منتشرشده پشتیبانی می‌شود. کمبود اصلی، سال‌های کار در یک تیم مهندسی حرفه‌ای است.",
+strengths: "نقاط قوت", st1: "پایتون و FastAPI در پروژه‌های منتشرشده", st2: "RAG عامل‌محور با pgvector (Astra)", st3: "سیستم چندایجنتی با LangGraph (میز ترید)",
+gaps: "کمبودها", g1: "هنوز سابقه‌ی کار در یک تیم نرم‌افزاری حرفه‌ای ندارد", g2: "در کارهای منتشرشده از Kubernetes استفاده نکرده",
+ask: "سؤال‌های پیشنهادی برای مصاحبه", a1: "ایجنت‌های ترید چطور داخل محدوده‌ی ریسک می‌مانند؟", a2: "قبل از انتشار، کیفیت جواب‌ها را چطور ارزیابی کردی؟",
+follow: "از دوقلو سؤال تکمیلی بپرسید", call: "تنظیم یک تماس"
+}
+};
+function faDigits(s) { return String(s).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]); }
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+let dark = false;
+try { dark = window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {}
+this.state = { lang: "en", theme: dark ? "dark" : "light", phase: "done", score: 78 };
+}
+componentWillUnmount() { clearInterval(this.iv); }
+run() {
+if (this.state.phase === "running") return;
+this.setState({ phase: "running", score: 0 });
+clearInterval(this.iv);
+this.iv = setInterval(() => {
+const n = this.state.score + 2;
+if (n >= 78) { clearInterval(this.iv); this.setState({ score: 78, phase: "done" }); }
+else this.setState({ score: n });
+}, 30);
+}
+renderVals() {
+const s = this.state;
+const L = s.lang;
+return {
+t: T[L], lang: L, dir: L === "fa" ? "rtl" : "ltr",
+rootClass: "root " + (L === "fa" ? "lang-fa" : "lang-en") + " theme-" + s.theme,
+enOn: L === "en", faOn: L === "fa",
+setEn: () => this.setState({ lang: "en" }), setFa: () => this.setState({ lang: "fa" }),
+isLight: s.theme === "light", isDark: s.theme === "dark",
+toggleTheme: () => this.setState({ theme: s.theme === "light" ? "dark" : "light" }),
+idle: s.phase !== "running", running: s.phase === "running", showDetails: s.phase === "done",
+run: () => this.run(),
+scoreText: L === "fa" ? faDigits(s.score) : String(s.score),
+dash: Math.round(314 - (314 * s.score) / 100)
+};
+}
+}
+</script>
+</body>
+</html>

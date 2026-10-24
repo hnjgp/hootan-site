@@ -1,0 +1,53 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Playwright
+test-results/
+playwright-report/
+
+# Build output
+dist/
+build/
+
+# Database backups
+backups/
+*.dump
+*.sql.gz
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Original portrait images (kept local only)
+design/assets/originals/
+
+# Claude Code and personal working notes (kept local only)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+PROGRESS.md
+LEARNING_LOG.md

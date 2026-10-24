@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Digital twin — Hootan Seifi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Caveat:wght@500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Vazirmatn:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F3EBDD}
+.theme-light{--bg:#F3EBDD;--card:#FFFDF8;--ink:#1E1C1A;--muted:#4A453E;--line:#1E1C1A;--soft:#E6DCC9;--accent:#A8420C;--paper:#F3EBDD;--inv:#1E1C1A;--invInk:#F3EBDD;--green:#1F6B4E;--input:#FFFFFF;--okbg:#DDEFE6}
+.theme-dark{--bg:#15161C;--card:#1F212A;--ink:#EDE6D8;--muted:#B5AEA1;--line:#CFC7B8;--soft:#2C2F3A;--accent:#F2914F;--paper:#EFE5D3;--inv:#EDE6D8;--invInk:#15161C;--green:#6FD3A8;--input:#15161C;--okbg:#1C3A2F}
+a{color:var(--accent)}a:hover{opacity:.8}
+.lang-en{font-family:'DM Sans',system-ui,sans-serif}
+.lang-fa{font-family:'Vazirmatn',system-ui,sans-serif}
+.root{transition:background-color .4s ease,color .4s ease}
+.btn{transition:transform .12s ease}
+.btn:hover{transform:translate(-1px,-1px)}
+.btn:active{transform:scale(.96)}
+.chip:hover{background:var(--inv) !important;color:var(--invInk) !important}
+.pop{animation:pop .35s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.85) translateY(8px)}to{opacity:1;transform:none}}
+.fade{animation:fade .45s ease both}
+@keyframes fade{from{opacity:.2}to{opacity:1}}
+.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.dots span{display:inline-block;width:7px;height:7px;margin:0 2px;border-radius:50%;background:var(--ink);animation:dot 1s ease-in-out infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
+.floatBig{animation:floatBig 9s ease-in-out infinite}
+@keyframes floatBig{0%,100%{translate:0 0}50%{translate:0 -4px}}
+.breathe{animation:breathe 4s ease-in-out infinite}
+@keyframes breathe{0%,100%{scale:1}50%{scale:1.012}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div class="{{ rootClass }}" dir="{{ dir }}" lang="{{ lang }}" style="min-height: 100%; background: var(--bg); color: var(--ink)">
+
+<header style="border-bottom: 1.5px solid var(--line)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none">
+<img src="/_blob/5407446f62e6cbed748eef90818eb767" alt="" style="width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line)">
+<div style="font-weight: 600; font-size: 16px">{{ t.name }}</div>
+</a>
+<nav aria-label="Site mode" style="display: flex; padding: 4px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--card)">
+<a href="Main.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; background: var(--inv); color: var(--invInk); text-decoration: none; font-weight: 600; font-size: 14px">{{ t.portfolio }}</a>
+<a href="Trading.dc.html" class="btn" style="display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px; border-radius: 999px; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 14px"><span class="pulse" aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #E8692A"></span>{{ t.trading }}</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 8px">
+<button type="button" class="btn" onClick="{{ toggleTheme }}" aria-label="{{ t.themeLabel }}" style="width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"></path></svg></sc-if>
+<sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+</button>
+<div role="group" aria-label="Language" style="display: flex; padding: 3px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--card)">
+<sc-if value="{{ enOn }}" hint-placeholder-val="{{ true }}">
+<button type="button" aria-pressed="true" style="min-height: 34px; min-width: 40px; border-radius: 999px; border: 0; background: var(--inv); color: var(--invInk); font-weight: 700; font-size: 13px">EN</button>
+<button type="button" class="btn" aria-pressed="false" onClick="{{ setFa }}" style="min-height: 34px; min-width: 40px; border-radius: 999px; border: 0; background: transparent; color: var(--ink); font-family: 'Vazirmatn', sans-serif; font-weight: 700; font-size: 14px">فا</button>
+</sc-if>
+<sc-if value="{{ faOn }}" hint-placeholder-val="{{ false }}">
+<button type="button" class="btn" aria-pressed="false" onClick="{{ setEn }}" style="min-height: 34px; min-width: 40px; border-radius: 999px; border: 0; background: transparent; color: var(--ink); font-weight: 700; font-size: 13px">EN</button>
+<button type="button" aria-pressed="true" style="min-height: 34px; min-width: 40px; border-radius: 999px; border: 0; background: var(--inv); color: var(--invInk); font-family: 'Vazirmatn', sans-serif; font-weight: 700; font-size: 14px">فا</button>
+</sc-if>
+</div>
+<a href="#resume" class="btn" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: #E8692A; color: #1E1C1A; border: 1.5px solid var(--line); text-decoration: none; font-weight: 700; font-size: 15px">{{ t.resume }}</a>
+</div>
+</div>
+</header>
+
+<main style="max-width: 1200px; margin: 0 auto; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 16px">
+<a href="Main.dc.html" style="font-size: 15px; text-decoration: none">{{ t.back }}</a>
+
+<div class="floatBig" style="display: flex; flex-wrap: wrap; border: 2px solid var(--line); border-radius: 22px; background: var(--card); overflow: hidden; box-shadow: 6px 6px 0 var(--line)">
+
+<div dir="ltr" style="flex: 1 1 440px; min-width: 0; position: relative; aspect-ratio: 1 / 1; background: var(--paper); border-inline-end: 1.5px solid var(--line); overflow: hidden">
+<div class="breathe" style="position: absolute; inset: 0; transform-origin: 50% 80%">
+<sc-if value="{{ isListen }}" hint-placeholder-val="{{ true }}"><img class="fade" src="/_blob/b504908384023643f3bf476ddf5356b7" alt="{{ t.altListen }}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover"></sc-if>
+<sc-if value="{{ isThink }}" hint-placeholder-val="{{ false }}"><img class="fade" src="/_blob/3680a6ef1958a62aeb6356162f7658bf" alt="{{ t.altThink }}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover"></sc-if>
+<sc-if value="{{ isTalk }}" hint-placeholder-val="{{ false }}"><img class="fade" src="/_blob/aec23795ed17814cf7fef74758ec9e59" alt="{{ t.altTalk }}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover"></sc-if>
+</div>
+<div dir="{{ dir }}" style="position: absolute; left: 16px; top: 16px; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #1E1C1A; color: #F3EBDD; font-size: 13px; font-weight: 600"><span class="pulse" aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #E8692A"></span>{{ stateLabel }}</div>
+<sc-if value="{{ isThink }}" hint-placeholder-val="{{ false }}"><div class="pop" style="position: absolute; left: 16px; bottom: 16px; padding: 8px 12px; border-radius: 10px; background: #FFFDF8; color: #1E1C1A; border: 1.5px solid #1E1C1A; font-family: 'IBM Plex Mono', monospace; font-size: 12px; display: flex; align-items: center; gap: 8px"><span class="dots" aria-hidden="true" style="--ink: #1E1C1A"><span></span><span></span><span></span></span>{{ stepLabel }}</div></sc-if>
+</div>
+
+<section aria-label="Chat" style="flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column">
+<div style="padding: 18px 22px; border-bottom: 1.5px solid var(--line)">
+<h1 style="margin: 0; font-size: 26px; font-weight: 700">{{ t.h1 }}</h1>
+<div style="font-size: 14px; color: var(--muted); margin-top: 4px">{{ t.sub }}</div>
+</div>
+
+<div aria-live="polite" style="flex: 1 1 auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; min-height: 320px">
+<sc-for list="{{ msgs }}" as="m" hint-placeholder-count="2">
+<sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}"><div class="pop" style="align-self: flex-end; max-width: 80%; padding: 10px 14px; border-radius: 14px 14px 4px 14px; background: var(--inv); color: var(--invInk); font-size: 15px; line-height: 1.55">{{ m.text }}</div></sc-if>
+<sc-if value="{{ m.isBot }}" hint-placeholder-val="{{ true }}">
+<div class="pop" style="align-self: flex-start; max-width: 92%; display: flex; flex-direction: column; gap: 6px">
+<div style="padding: 10px 14px; border-radius: 14px 14px 14px 4px; background: var(--bg); border: 1.5px solid var(--line); font-size: 15px; line-height: 1.6">{{ m.text }}</div>
+<sc-if value="{{ m.hasSrc }}" hint-placeholder-val="{{ false }}"><div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted)">{{ t.sources }} {{ m.src }}</div></sc-if>
+<sc-if value="{{ m.form }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+<form style="display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end">
+<div style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 4px">
+<label for="lead" style="font-size: 13px; color: var(--muted)">{{ t.emailLabel }}</label>
+<input id="lead" type="email" dir="ltr" placeholder="name@company.com" style="min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--input); color: var(--ink); font-size: 15px">
+</div>
+<button type="button" class="btn" onClick="{{ sendEmail }}" style="min-height: 44px; padding: 0 16px; border-radius: 10px; background: #1F6B4E; color: #FFFFFF; border: 1.5px solid var(--line); font-weight: 700; font-size: 15px; font-family: inherit">{{ t.send }}</button>
+</form>
+</sc-if>
+<sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}"><div class="pop" style="padding: 8px 12px; border-radius: 10px; background: var(--okbg); border: 1.5px solid var(--green); font-size: 14px; font-weight: 600; color: var(--green)">{{ t.sentMsg }}</div></sc-if>
+</sc-if>
+</div>
+</sc-if>
+</sc-for>
+<sc-if value="{{ isThink }}" hint-placeholder-val="{{ false }}"><div class="pop dots" aria-label="{{ t.thinking }}" style="align-self: flex-start; padding: 12px 16px; border-radius: 14px 14px 14px 4px; background: var(--bg); border: 1.5px solid var(--line)"><span></span><span></span><span></span></div></sc-if>
+</div>
+
+<div style="padding: 0 22px 12px; display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{ chips }}" as="c" hint-placeholder-count="4">
+<button type="button" class="btn chip" onClick="{{ c.ask }}" disabled="{{ busy }}" style="min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); color: var(--ink); font-size: 14px; font-family: inherit">{{ c.label }}</button>
+</sc-for>
+</div>
+
+<form style="padding: 14px 22px; border-top: 1.5px solid var(--line); display: flex; gap: 8px">
+<label for="ask" style="position: absolute; left: -9999px">{{ t.askLabel }}</label>
+<input id="ask" type="text" value="{{ input }}" onChange="{{ onInput }}" placeholder="{{ t.placeholder }}" style="flex: 1 1 auto; min-width: 0; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--input); color: var(--ink); font-size: 15px; font-family: inherit">
+<button type="button" class="btn" onClick="{{ askCustom }}" disabled="{{ busy }}" style="min-height: 48px; padding: 0 22px; border-radius: 12px; background: #E8692A; color: #1E1C1A; border: 1.5px solid var(--line); font-weight: 700; font-size: 15px; font-family: inherit">{{ t.ask }}</button>
+</form>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+const T = {
+en: {
+name: "Hootan Seifi", portfolio: "Portfolio", trading: "AI Trading Floor", resume: "Download résumé", back: "← Back to portfolio", themeLabel: "Switch light or dark mode",
+h1: "Interview my digital twin", sub: "Answers come only from my résumé, LinkedIn and project docs.",
+listen: "Listening", think: "Thinking…", talk: "Answering", thinking: "thinking",
+steps: ["searching: resume.pdf", "reading: project docs", "checking the answer"],
+altListen: "Hootan listening, hands folded on the desk", altThink: "Hootan thinking, hand on chin", altTalk: "Hootan explaining with a hand gesture",
+sources: "sources:", emailLabel: "Your work email", send: "Send to Hootan", sentMsg: "Sent! Hootan will reply personally.",
+askLabel: "Ask the twin", placeholder: "Ask about my work, skills or projects…", ask: "Ask",
+greet: "Hi, I'm Hootan's digital twin. Ask me anything about his work.",
+qa: {
+lg: ["What have you built with LangGraph?", "Two things. Astra, an agent platform that decides when to search company documents and which tools each role may use. And the AI Trading Floor, where seven agents debate and trade every morning.", "Astra README · Trading Floor case study"],
+bg: ["What's your background?", "R&D at MAPNA's MECO, app review at Cafe Bazaar, two years as a fundamental analyst and trader, and now AI engineering: agents, RAG and LLM systems.", "résumé · LinkedIn"],
+rm: ["How can we work together?", "I'm open to AI Engineer work on-site, remote, hybrid or project-based.", "LinkedIn preferences"],
+sl: ["What salary are you expecting?", "That one's for the real Hootan. Leave your email and he'll reply personally.", ""],
+cu: ["", "Good question. On the live site I'd search my documents for that and answer with sources.", ""]
+}
+},
+fa: {
+name: "هوتن سیفی", portfolio: "پورتفولیو", trading: "میز ترید هوش مصنوعی", resume: "دانلود رزومه", back: "→ بازگشت به پورتفولیو", themeLabel: "تغییر حالت روشن یا تاریک",
+h1: "با دوقلوی دیجیتال من مصاحبه کنید", sub: "جواب‌ها فقط از رزومه، لینکدین و مستندات پروژه‌هایم می‌آیند.",
+listen: "در حال گوش دادن", think: "در حال فکر کردن…", talk: "در حال پاسخ دادن", thinking: "در حال فکر کردن",
+steps: ["جستجو: resume.pdf", "خواندن: مستندات پروژه‌ها", "بررسی جواب"],
+altListen: "هوتن در حال گوش دادن، دست‌ها روی میز", altThink: "هوتن در حال فکر کردن، دست زیر چانه", altTalk: "هوتن در حال توضیح دادن",
+sources: "منابع:", emailLabel: "ایمیل کاری شما", send: "ارسال برای هوتن", sentMsg: "ارسال شد! هوتن خودش جواب می‌دهد.",
+askLabel: "از دوقلو بپرسید", placeholder: "درباره‌ی کار، مهارت‌ها یا پروژه‌هایم بپرسید…", ask: "بپرس",
+greet: "سلام، من دوقلوی دیجیتال هوتن هستم. هر سؤالی درباره‌ی کارهایش دارید بپرسید.",
+qa: {
+lg: ["با LangGraph چه چیزهایی ساخته‌ای؟", "دو چیز. Astra، یک پلتفرم ایجنت که تصمیم می‌گیرد کی در اسناد شرکت جستجو کند و هر نقش به کدام ابزارها دسترسی دارد. و میز ترید هوش مصنوعی، که هفت ایجنت هر صبح در آن بحث و معامله می‌کنند.", "Astra README · Trading Floor case study"],
+bg: ["سابقه‌ات چیست؟", "تحقیق و توسعه در مپنا (MECO)، بررسی اپلیکیشن در کافه‌بازار، دو سال تحلیلگر بنیادی و تریدر، و حالا مهندسی هوش مصنوعی: ایجنت‌ها، RAG و سیستم‌های LLM.", "résumé · LinkedIn"],
+rm: ["چطور می‌توانیم همکاری کنیم؟", "برای نقش مهندس هوش مصنوعی به‌صورت حضوری، دورکاری، ترکیبی یا پروژه‌ای آماده‌ی همکاری‌ام.", "LinkedIn preferences"],
+sl: ["چه حقوقی مدنظرت است؟", "این را باید از خود هوتن بپرسید. ایمیل‌تان را بگذارید تا خودش جواب بدهد.", ""],
+cu: ["", "سؤال خوبی است. در سایت واقعی، جوابش را از مستندات من پیدا می‌کنم و با منبع جواب می‌دهم.", ""]
+}
+}
+};
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+let dark = false;
+try { dark = window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {}
+this.state = { lang: "en", theme: dark ? "dark" : "light", phase: "listen", step: 0, msgs: [{ role: "bot", k: "greet" }], typed: -1, input: "", sent: false };
+this.timers = [];
+}
+componentWillUnmount() { this.timers.forEach((x) => { clearTimeout(x); clearInterval(x); }); }
+ask(k, customText) {
+if (this.state.phase !== "listen") return;
+const msgs = this.state.msgs.concat([{ role: "user", k, custom: customText || "" }]);
+this.setState({ msgs, phase: "think", step: 0, input: "" });
+[700, 1400].forEach((ms, i) => this.timers.push(setTimeout(() => this.setState({ step: i + 1 }), ms)));
+this.timers.push(setTimeout(() => {
+const full = T[this.state.lang].qa[k][1].length;
+this.setState({ msgs: this.state.msgs.concat([{ role: "bot", k }]), phase: "talk", typed: 0 });
+const iv = setInterval(() => {
+const n = this.state.typed + 4;
+if (n >= full) { clearInterval(iv); this.setState({ typed: -1, phase: "listen" }); }
+else this.setState({ typed: n });
+}, 30);
+this.timers.push(iv);
+}, 2100));
+}
+renderVals() {
+const s = this.state;
+const L = s.lang;
+const t = T[L];
+const last = s.msgs.length - 1;
+const msgs = s.msgs.map((m, i) => {
+if (m.k === "greet") return { isUser: false, isBot: true, text: t.greet, hasSrc: false, form: false };
+const qa = t.qa[m.k];
+if (m.role === "user") return { isUser: true, isBot: false, text: m.k === "cu" ? m.custom : qa[0], hasSrc: false, form: false };
+const full = qa[1];
+const text = i === last && s.typed >= 0 ? full.slice(0, s.typed) : full;
+const done = !(i === last && s.typed >= 0);
+return { isUser: false, isBot: true, text, src: qa[2], hasSrc: done && !!qa[2], form: done && m.k === "sl" };
+});
+const chips = ["lg", "bg", "rm", "sl"].map((k) => ({ label: t.qa[k][0], ask: () => this.ask(k) }));
+return {
+t, lang: L, dir: L === "fa" ? "rtl" : "ltr",
+rootClass: "root " + (L === "fa" ? "lang-fa" : "lang-en") + " theme-" + s.theme,
+enOn: L === "en", faOn: L === "fa",
+setEn: () => this.setState({ lang: "en" }), setFa: () => this.setState({ lang: "fa" }),
+isLight: s.theme === "light", isDark: s.theme === "dark",
+toggleTheme: () => this.setState({ theme: s.theme === "light" ? "dark" : "light" }),
+isListen: s.phase === "listen", isThink: s.phase === "think", isTalk: s.phase === "talk",
+stateLabel: s.phase === "listen" ? t.listen : s.phase === "think" ? t.think : t.talk,
+stepLabel: t.steps[s.step],
+msgs, chips, busy: s.phase !== "listen",
+input: s.input, onInput: (e) => this.setState({ input: e.target.value }),
+askCustom: () => { if (s.input.trim()) this.ask("cu", s.input.trim()); },
+sent: s.sent, notSent: !s.sent, sendEmail: () => this.setState({ sent: true })
+};
+}
+}
+</script>
+</body>
+</html>
