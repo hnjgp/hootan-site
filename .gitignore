@@ -42,6 +42,9 @@ backups/
 Thumbs.db
 .vscode/
 
+# Digital twin knowledge sources (kept local only; copied to the server separately)
+backend/knowledge/
+
 # Original portrait images (kept local only)
 design/assets/originals/
 
