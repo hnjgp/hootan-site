@@ -4,12 +4,14 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -21,6 +23,9 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
+# Size of text-embedding-3-small vectors; changing the model needs a new migration.
+EMBED_DIM = 1536
 
 
 def created_at_column() -> Mapped[datetime]:
@@ -122,3 +127,67 @@ class LLMUsage(Base):
     tokens_in: Mapped[int] = mapped_column(Integer)
     tokens_out: Mapped[int] = mapped_column(Integer)
     cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6))
+
+
+class Document(Base):
+    """One knowledge file of the digital twin; `source` is its path inside knowledge/."""
+
+    __tablename__ = "documents"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    source: Mapped[str] = mapped_column(String(200), unique=True)
+    lang: Mapped[str] = mapped_column(String(8))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class DocChunk(Base):
+    """A piece of a document with its embedding, searched by cosine distance."""
+
+    __tablename__ = "doc_chunks"
+    __table_args__ = (
+        Index(
+            "ix_doc_chunks_embedding",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    document_id: Mapped[int] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), index=True
+    )
+    content: Mapped[str] = mapped_column(Text)
+    embedding: Mapped[list[float]] = mapped_column(Vector(EMBED_DIM))
+    meta: Mapped[dict | None] = mapped_column(JSONB)
+
+
+class ChatLog(Base):
+    """One twin question and its answer; token fields are empty when no LLM was called."""
+
+    __tablename__ = "chat_logs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    visitor_id: Mapped[str] = mapped_column(String(64), index=True)
+    question: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    sources: Mapped[list | None] = mapped_column(JSONB)
+    model: Mapped[str | None] = mapped_column(String(64))
+    tokens_in: Mapped[int | None] = mapped_column(Integer)
+    tokens_out: Mapped[int | None] = mapped_column(Integer)
+    cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(10, 6))
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class Lead(Base):
+    """Email a visitor left for Hootan, with the question that led to it."""
+
+    __tablename__ = "leads"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    email: Mapped[str] = mapped_column(String(254))
+    context: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = created_at_column()
