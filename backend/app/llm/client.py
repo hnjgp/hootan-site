@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from openai import AsyncOpenAI
+from openai.lib._pydantic import to_strict_json_schema
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings
@@ -56,6 +58,34 @@ class LLMClient:
         await self._record(session, feature, model, result)
         return result.text
 
+    async def structured[T: BaseModel](
+        self,
+        session: AsyncSession,
+        feature: str,
+        model: str,
+        messages: list[dict],
+        max_tokens: int,
+        schema: type[T],
+    ) -> tuple[T, Completion]:
+        """Return the reply parsed into `schema` and its Completion.
+
+        The provider enforces the JSON schema (strict mode). Usage is recorded before
+        validation, so a bad reply still counts toward the budget. Through AvalAI,
+        Gemini ignored the schema while OpenAI models followed it (probe, 2026-10-26).
+        """
+        await check_budget(session, feature, self.settings)
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": schema.__name__,
+                "schema": to_strict_json_schema(schema),
+                "strict": True,
+            },
+        }
+        result = await self._complete(model, messages, max_tokens, response_format)
+        await self._record(session, feature, model, result)
+        return schema.model_validate_json(result.text), result
+
     async def stream_chat(
         self,
         session: AsyncSession,
@@ -106,14 +136,20 @@ class LLMClient:
         return {}
 
     async def _complete(
-        self, model: str, messages: list[dict], max_tokens: int
+        self,
+        model: str,
+        messages: list[dict],
+        max_tokens: int,
+        response_format: dict | None = None,
     ) -> Completion:
         """One chat completion with the model's reasoning effort, if one is set."""
+        extra = {"response_format": response_format} if response_format else {}
         response = await self.api.chat.completions.create(
             model=model,
             messages=messages,
             max_completion_tokens=max_tokens,
             **self._effort(model),
+            **extra,
         )
         return Completion(
             text=response.choices[0].message.content or "",

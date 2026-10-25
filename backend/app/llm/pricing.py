@@ -6,6 +6,7 @@ from decimal import Decimal
 PRICES: dict[str, tuple[Decimal, Decimal]] = {
     "gemini-2.5-flash": (Decimal("0.30"), Decimal("2.50")),
     "gemini-2.5-flash-lite": (Decimal("0.10"), Decimal("0.40")),
+    "gpt-4.1-mini": (Decimal("0.40"), Decimal("1.60")),
     "gpt-5-nano": (Decimal("0.05"), Decimal("0.40")),
     "text-embedding-3-small": (Decimal("0.02"), Decimal(0)),
 }

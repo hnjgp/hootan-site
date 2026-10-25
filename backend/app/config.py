@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.avalai.ir/v1"
     llm_api_key: str = ""
     model_twin: str = "gemini-2.5-flash-lite"
-    model_jobfit: str = "gemini-2.5-flash-lite"
+    model_jobfit: str = "gpt-4.1-mini"
     model_trading: str = "gpt-5-nano"
     model_translate: str = "gpt-5-nano"
     model_embed: str = "text-embedding-3-small"

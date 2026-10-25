@@ -182,6 +182,24 @@ class ChatLog(Base):
     created_at: Mapped[datetime] = created_at_column()
 
 
+class JobFitRequest(Base):
+    """One job ad a visitor pasted and the structured fit result for it."""
+
+    __tablename__ = "jobfit_requests"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    visitor_id: Mapped[str] = mapped_column(String(64), index=True)
+    jd_text: Mapped[str] = mapped_column(Text)
+    lang: Mapped[str] = mapped_column(String(8))
+    score: Mapped[int] = mapped_column(Integer)
+    result: Mapped[dict] = mapped_column(JSONB)
+    model: Mapped[str] = mapped_column(String(64))
+    tokens_in: Mapped[int] = mapped_column(Integer)
+    tokens_out: Mapped[int] = mapped_column(Integer)
+    cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6))
+    created_at: Mapped[datetime] = created_at_column()
+
+
 class Lead(Base):
     """Email a visitor left for Hootan, with the question that led to it."""
 
