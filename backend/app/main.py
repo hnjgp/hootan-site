@@ -2,7 +2,10 @@
 
 from fastapi import FastAPI
 
+from app.twin.api import router as twin_router
+
 app = FastAPI(title="hootanseifi.com API")
+app.include_router(twin_router)
 
 
 @app.get("/api/health")

@@ -11,6 +11,7 @@ import sys
 from app.config import get_settings
 from app.db.session import SessionLocal
 from app.llm.client import LLMClient
+from app.twin.chunking import detect_lang
 from app.twin.retrieval import search
 
 QUESTIONS = {
@@ -46,13 +47,13 @@ async def main() -> None:
     async with SessionLocal() as session:
         for q in sys.argv[1:]:
             print(q)
-            for hit in await search(session, client, q):
+            for hit in await search(session, client, q, lang=detect_lang(q)):
                 print(f"  {hit.distance:.3f}  {hit.content.splitlines()[0]}")
         if sys.argv[1:]:
             return
         for group, questions in QUESTIONS.items():
             for q in questions:
-                best = (await search(session, client, q, k=1))[0]
+                best = (await search(session, client, q, k=1, lang=detect_lang(q)))[0]
                 heading = best.content.splitlines()[0]
                 print(f"{group:9} {best.distance:.3f}  {q}  ->  {heading}")
 

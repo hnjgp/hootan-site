@@ -24,3 +24,19 @@ async def test_search_returns_nearest_chunks_first(session, tmp_path):
     assert (hits[0].source, hits[0].title) == ("resume_en.md", "Resume")
     assert hits[0].distance == pytest.approx(0, abs=1e-6)
     assert hits[1].distance > hits[0].distance
+
+
+async def test_search_can_keep_only_one_language(session, tmp_path):
+    (tmp_path / "resume.md").write_text(
+        "# Resume\n## Experience\n- Cafe Bazaar\n## سوابق کاری\n- کافه‌بازار\n",
+        encoding="utf-8",
+    )
+    client = FakeLLMClient(SETTINGS)
+    await ingest(session, client, tmp_path)
+
+    # The question matches the English chunk exactly, but only Persian is allowed.
+    hits = await search(
+        session, client, "Resume | Experience\n- Cafe Bazaar", lang="fa"
+    )
+
+    assert [h.content for h in hits] == ["Resume | سوابق کاری\n- کافه‌بازار"]

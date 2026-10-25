@@ -16,6 +16,8 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     database_url: str
+    secret_key: str = "dev-secret"
+    contact_email: str = ""
 
     llm_base_url: str = "https://api.avalai.ir/v1"
     llm_api_key: str = ""
