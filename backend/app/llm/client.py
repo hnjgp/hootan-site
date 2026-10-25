@@ -1,6 +1,8 @@
 """LLM client: budget check, then the call (timeout and retries), then cost recording."""
 
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from decimal import Decimal
 
 from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +24,7 @@ class Completion:
     text: str
     tokens_in: int
     tokens_out: int
+    cost_usd: Decimal | None = None
 
 
 class LLMClient:
@@ -50,30 +53,99 @@ class LLMClient:
         """
         await check_budget(session, feature, self.settings)
         result = await self._complete(model, messages, max_tokens)
+        await self._record(session, feature, model, result)
+        return result.text
+
+    async def stream_chat(
+        self,
+        session: AsyncSession,
+        feature: str,
+        model: str,
+        messages: list[dict],
+        max_tokens: int,
+    ) -> AsyncIterator[str | Completion]:
+        """Yield text pieces as they arrive, then one Completion with the full text.
+
+        The budget is checked before the call; usage is recorded when the stream ends,
+        so the caller must read the stream to the end.
+        """
+        await check_budget(session, feature, self.settings)
+        async for item in self._stream(model, messages, max_tokens):
+            if isinstance(item, Completion):
+                await self._record(session, feature, model, item)
+            yield item
+
+    async def embed(self, session: AsyncSession, texts: list[str]) -> list[list[float]]:
+        """Return one embedding per text, checked and recorded as the embedding feature."""
+        await check_budget(session, "embedding", self.settings)
+        model = self.settings.model_embed
+        vectors, tokens_in = await self._embed(model, texts)
+        await self._record(session, "embedding", model, Completion("", tokens_in, 0))
+        return vectors
+
+    async def _record(
+        self, session: AsyncSession, feature: str, model: str, result: Completion
+    ) -> None:
+        """Store the cost of one call in llm_usage and on the result, then commit."""
+        result.cost_usd = cost_usd(model, result.tokens_in, result.tokens_out)
         session.add(
             LLMUsage(
                 feature=feature,
                 model=model,
                 tokens_in=result.tokens_in,
                 tokens_out=result.tokens_out,
-                cost_usd=cost_usd(model, result.tokens_in, result.tokens_out),
+                cost_usd=result.cost_usd,
             )
         )
         await session.commit()
-        return result.text
+
+    def _effort(self, model: str) -> dict:
+        """Extra request arguments for the model's reasoning effort, if one is set."""
+        if model in REASONING_EFFORT:
+            return {"reasoning_effort": REASONING_EFFORT[model]}
+        return {}
 
     async def _complete(
         self, model: str, messages: list[dict], max_tokens: int
     ) -> Completion:
         """One chat completion with the model's reasoning effort, if one is set."""
-        extra = {}
-        if model in REASONING_EFFORT:
-            extra["reasoning_effort"] = REASONING_EFFORT[model]
         response = await self.api.chat.completions.create(
-            model=model, messages=messages, max_completion_tokens=max_tokens, **extra
+            model=model,
+            messages=messages,
+            max_completion_tokens=max_tokens,
+            **self._effort(model),
         )
         return Completion(
             text=response.choices[0].message.content or "",
             tokens_in=response.usage.prompt_tokens,
             tokens_out=response.usage.completion_tokens,
         )
+
+    async def _stream(
+        self, model: str, messages: list[dict], max_tokens: int
+    ) -> AsyncIterator[str | Completion]:
+        """Stream one chat completion; the last chunk carries the usage (AvalAI probe)."""
+        stream = await self.api.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_completion_tokens=max_tokens,
+            stream=True,
+            stream_options={"include_usage": True},
+            **self._effort(model),
+        )
+        text, usage = "", None
+        async for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                piece = chunk.choices[0].delta.content
+                text += piece
+                yield piece
+            if chunk.usage:
+                usage = chunk.usage
+        yield Completion(text, usage.prompt_tokens, usage.completion_tokens)
+
+    async def _embed(
+        self, model: str, texts: list[str]
+    ) -> tuple[list[list[float]], int]:
+        """Embed a batch of texts; return the vectors and the input token count."""
+        response = await self.api.embeddings.create(model=model, input=texts)
+        return [d.embedding for d in response.data], response.usage.prompt_tokens
