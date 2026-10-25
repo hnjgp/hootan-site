@@ -9,6 +9,7 @@ dependencies = [
     "openai>=3.37.0",
     "pydantic-settings>=2.16.1",
     "sqlalchemy[asyncio]>=2.1.6",
+    "tzdata>=2026.5",
     "uvicorn[standard]>=0.54.0",
 ]
 

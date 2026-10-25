@@ -1,5 +1,6 @@
 """Application settings loaded from environment variables and the root .env file."""
 
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 
@@ -24,9 +25,9 @@ class Settings(BaseSettings):
     model_translate: str = "gpt-5-nano"
     model_embed: str = ""
 
-    budget_monthly_usd: float = 5
-    budget_trading_daily_usd: float = 0.06
-    budget_public_daily_usd: float = 0.10
+    budget_monthly_usd: Decimal = Decimal(5)
+    budget_trading_daily_usd: Decimal = Decimal("0.06")
+    budget_public_daily_usd: Decimal = Decimal("0.10")
     ai_enabled: bool = True
 
 
