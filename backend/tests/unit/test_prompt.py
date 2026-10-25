@@ -26,6 +26,15 @@ def test_sources_are_tagged_data_inside_the_system_message():
     assert messages[-1] == {"role": "user", "content": "Where did you study?"}
 
 
+def test_reply_language_follows_the_question():
+    assert build_messages("Do you know Power BI?", HITS, [])[0]["content"].endswith(
+        "Reply in English."
+    )
+    assert build_messages("با n8n کار کرده‌ای؟", HITS, [])[0]["content"].endswith(
+        "Reply in Persian."
+    )
+
+
 def test_only_the_last_six_history_messages_are_kept():
     history = [{"role": "user", "content": str(i)} for i in range(10)]
 
