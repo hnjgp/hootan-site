@@ -19,11 +19,11 @@ class Settings(BaseSettings):
 
     llm_base_url: str = "https://api.avalai.ir/v1"
     llm_api_key: str = ""
-    model_twin: str = "gemini-2.5-flash"
-    model_jobfit: str = "gemini-2.5-flash"
+    model_twin: str = "gemini-2.5-flash-lite"
+    model_jobfit: str = "gemini-2.5-flash-lite"
     model_trading: str = "gpt-5-nano"
     model_translate: str = "gpt-5-nano"
-    model_embed: str = ""
+    model_embed: str = "text-embedding-3-small"
 
     budget_monthly_usd: Decimal = Decimal(5)
     budget_trading_daily_usd: Decimal = Decimal("0.06")

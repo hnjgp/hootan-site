@@ -5,6 +5,7 @@ from decimal import Decimal
 # USD per 1M tokens: (input, output). Reasoning tokens are billed as output.
 PRICES: dict[str, tuple[Decimal, Decimal]] = {
     "gemini-2.5-flash": (Decimal("0.30"), Decimal("2.50")),
+    "gemini-2.5-flash-lite": (Decimal("0.10"), Decimal("0.40")),
     "gpt-5-nano": (Decimal("0.05"), Decimal("0.40")),
     "text-embedding-3-small": (Decimal("0.02"), Decimal(0)),
 }

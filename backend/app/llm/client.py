@@ -10,6 +10,10 @@ from app.db.models import LLMUsage
 from app.llm.budget import check_budget
 from app.llm.pricing import cost_usd
 
+# Thinking tokens count toward max_tokens; with default effort they used the whole
+# trading cap and the reply came back empty (real-call probe, 2026-10-25).
+REASONING_EFFORT = {"gpt-5-nano": "minimal"}
+
 
 @dataclass
 class Completion:
@@ -61,9 +65,12 @@ class LLMClient:
     async def _complete(
         self, model: str, messages: list[dict], max_tokens: int
     ) -> Completion:
-        """One chat completion; reasoning tokens count toward max_tokens and output."""
+        """One chat completion with the model's reasoning effort, if one is set."""
+        extra = {}
+        if model in REASONING_EFFORT:
+            extra["reasoning_effort"] = REASONING_EFFORT[model]
         response = await self.api.chat.completions.create(
-            model=model, messages=messages, max_completion_tokens=max_tokens
+            model=model, messages=messages, max_completion_tokens=max_tokens, **extra
         )
         return Completion(
             text=response.choices[0].message.content or "",
