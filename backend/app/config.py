@@ -16,6 +16,19 @@ class Settings(BaseSettings):
     app_env: str = "development"
     database_url: str
 
+    llm_base_url: str = "https://api.avalai.ir/v1"
+    llm_api_key: str = ""
+    model_twin: str = "gemini-2.5-flash"
+    model_jobfit: str = "gemini-2.5-flash"
+    model_trading: str = "gpt-5-nano"
+    model_translate: str = "gpt-5-nano"
+    model_embed: str = ""
+
+    budget_monthly_usd: float = 5
+    budget_trading_daily_usd: float = 0.06
+    budget_public_daily_usd: float = 0.10
+    ai_enabled: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:
