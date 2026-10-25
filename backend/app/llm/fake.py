@@ -26,14 +26,11 @@ class FakeLLMClient(LLMClient):
         self.embedded: list[str] = []
 
     async def _complete(
-        self,
-        model: str,
-        messages: list[dict],
-        max_tokens: int,
-        response_format: dict | None = None,
+        self, model: str, messages: list[dict], max_tokens: int, **extra
     ) -> Completion:
         """Pop the next canned reply with fixed token counts (100 in, 50 out)."""
         self.calls.append(messages)
+        self.extra = extra
         return Completion(text=self.replies.pop(0), tokens_in=100, tokens_out=50)
 
     async def _stream(

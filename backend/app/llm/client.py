@@ -66,23 +66,29 @@ class LLMClient:
         messages: list[dict],
         max_tokens: int,
         schema: type[T],
+        temperature: float | None = None,
     ) -> tuple[T, Completion]:
         """Return the reply parsed into `schema` and its Completion.
 
         The provider enforces the JSON schema (strict mode). Usage is recorded before
         validation, so a bad reply still counts toward the budget. Through AvalAI,
         Gemini ignored the schema while OpenAI models followed it (probe, 2026-10-26).
+        Reasoning models (gpt-5 family) reject temperature, so it is optional.
         """
         await check_budget(session, feature, self.settings)
-        response_format = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": schema.__name__,
-                "schema": to_strict_json_schema(schema),
-                "strict": True,
-            },
+        extra = {
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": schema.__name__,
+                    "schema": to_strict_json_schema(schema),
+                    "strict": True,
+                },
+            }
         }
-        result = await self._complete(model, messages, max_tokens, response_format)
+        if temperature is not None:
+            extra["temperature"] = temperature
+        result = await self._complete(model, messages, max_tokens, **extra)
         await self._record(session, feature, model, result)
         return schema.model_validate_json(result.text), result
 
@@ -136,14 +142,10 @@ class LLMClient:
         return {}
 
     async def _complete(
-        self,
-        model: str,
-        messages: list[dict],
-        max_tokens: int,
-        response_format: dict | None = None,
+        self, model: str, messages: list[dict], max_tokens: int, **extra
     ) -> Completion:
-        """One chat completion with the model's reasoning effort, if one is set."""
-        extra = {"response_format": response_format} if response_format else {}
+        """One chat completion with the model's reasoning effort, if one is set;
+        `extra` goes to the API as is (response_format, temperature)."""
         response = await self.api.chat.completions.create(
             model=model,
             messages=messages,

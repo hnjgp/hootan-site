@@ -1,6 +1,7 @@
-"""Run one job fit check: profile and ad to the model, then the rubric caps in code."""
+"""Run one job fit check: profile and ad to the model, then the rubric bands in code."""
 
 from datetime import datetime
+from fractions import Fraction
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,29 +10,37 @@ from app.jobfit.schema import FitResult
 from app.llm.budget import TEHRAN
 from app.llm.client import Completion, LLMClient
 
-MAX_TOKENS = 800
-# Rubric bands (Hootan's choice): every must-have skill met -> at least 90;
-# one missing -> at most 89; two or more missing -> at most 69.
-FLOOR_ALL_MET = 90
-CAP_ONE_MISSING = 89
-CAP_MORE_MISSING = 69
+# 800 cut Persian replies mid-JSON (eval, 2026-10-26); see the eval for real usage.
+MAX_TOKENS = 1500
+# Scoring must repeat: at the default temperature one ad scored 55 and then 70.
+TEMPERATURE = 0
+CREDIT = {"met": 1, "partial": Fraction(1, 2), "missing": 0}
+
+
+def band(share: Fraction) -> tuple[int, int]:
+    """Score range for the share of must-have skills met (Hootan's bands)."""
+    if share == 1:
+        return 90, 100
+    if share >= Fraction(2, 3):
+        return 70, 89
+    if share > 0:
+        return 50, 69
+    return 0, 49
 
 
 def apply_bands(result: FitResult) -> FitResult:
-    """Move the score into the band set by the must-have skills.
+    """Clamp the score into the band of the must-have skills it met.
 
-    Experience requirements (years, seniority, degrees) are shown as gaps but never
-    move the score. The model ignored these bands when they were only in the prompt
-    (real tests, 2026-10-26), so they are enforced here like the trading risk rules.
+    Met counts 1 and partial 1/2. Experience requirements (years, seniority,
+    degrees) are shown as gaps but never move the score. The model ignored the
+    bands when they were only in the prompt (real tests, 2026-10-26), so they are
+    enforced here like the trading risk rules; the model picks the place inside.
     """
     skills = [r for r in result.requirements if r.must_have and r.kind == "skill"]
-    missing = sum(r.status == "missing" for r in skills)
-    if skills and all(r.status == "met" for r in skills):
-        result.score = max(result.score, FLOOR_ALL_MET)
-    elif missing == 1:
-        result.score = min(result.score, CAP_ONE_MISSING)
-    elif missing > 1:
-        result.score = min(result.score, CAP_MORE_MISSING)
+    if skills:
+        share = sum(CREDIT[r.status] for r in skills) / Fraction(len(skills))
+        low, high = band(share)
+        result.score = min(max(result.score, low), high)
     return result
 
 
@@ -44,6 +53,12 @@ async def check_fit(
     messages = build_messages(profile, job_ad, lang, today)
     model = client.settings.model_jobfit
     result, completion = await client.structured(
-        session, "jobfit", model, messages, MAX_TOKENS, FitResult
+        session,
+        "jobfit",
+        model,
+        messages,
+        MAX_TOKENS,
+        FitResult,
+        temperature=TEMPERATURE,
     )
     return apply_bands(result), completion

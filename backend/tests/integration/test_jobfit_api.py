@@ -94,6 +94,8 @@ async def test_model_sees_only_the_english_profile_and_the_ad(api):
     assert "ساخت" not in system
     assert f"<job_ad>\n{AD}\n</job_ad>" in user
     assert "Persian" in user
+    assert api.fake.extra["temperature"] == 0
+    assert api.fake.extra["response_format"]["json_schema"]["strict"] is True
 
 
 async def test_ai_off_answers_503_without_a_call(api, session):

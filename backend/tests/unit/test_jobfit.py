@@ -25,32 +25,35 @@ def fit(score: int, *requirements: Requirement) -> FitResult:
     )
 
 
-def test_all_must_have_skills_met_lifts_score_to_90():
-    assert apply_bands(fit(85, req("met"), req("met"))).score == 90
-    assert apply_bands(fit(97, req("met"))).score == 97
+@pytest.mark.parametrize(
+    ("statuses", "model_score", "expected"),
+    [
+        (["met", "met"], 85, 90),  # all met: lifted into 90-100
+        (["met"], 97, 97),
+        (["met", "met", "missing"], 95, 89),  # 2/3: capped into 70-89
+        (["met", "met", "missing"], 60, 70),
+        (["met", "met", "partial", "partial"], 92, 89),  # 3/4
+        (["met", "missing", "missing"], 80, 69),  # 1/3: 50-69
+        (["partial", "missing", "missing"], 30, 50),
+        (["missing", "missing"], 60, 49),  # none: 0-49
+        (["missing"], 0, 0),
+    ],
+)
+def test_score_is_clamped_into_the_band_of_must_have_skills(
+    statuses, model_score, expected
+):
+    result = fit(model_score, *(req(s) for s in statuses))
+    assert apply_bands(result).score == expected
 
 
-def test_one_missing_must_have_skill_caps_at_89():
-    assert apply_bands(fit(95, req("met"), req("missing"))).score == 89
-    assert apply_bands(fit(75, req("met"), req("missing"))).score == 75
-
-
-def test_two_missing_must_have_skills_cap_at_69():
-    assert apply_bands(fit(80, req("missing"), req("missing"))).score == 69
-
-
-def test_missing_experience_does_not_move_the_score():
-    result = fit(85, req("met"), req("missing", kind="experience"))
+def test_experience_and_nice_to_have_do_not_count():
+    result = fit(
+        85,
+        req("met"),
+        req("missing", kind="experience"),
+        req("missing", must_have=False),
+    )
     assert apply_bands(result).score == 90
-
-
-def test_missing_nice_to_have_is_ignored():
-    result = fit(95, req("met"), req("missing", must_have=False))
-    assert apply_bands(result).score == 95
-
-
-def test_partial_skill_neither_lifts_nor_caps():
-    assert apply_bands(fit(85, req("met"), req("partial"))).score == 85
 
 
 def test_only_experience_requirements_leave_the_score_alone():
