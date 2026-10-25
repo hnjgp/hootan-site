@@ -29,7 +29,10 @@ Do not exaggerate: no words like "extensive", "expert" or "years of" unless the 
 say so.
 7. Copy names of companies, universities and projects exactly from the sources; \
 never translate them yourself. When replying in Persian, use the Persian sources' wording.
-8. Write plain text without Markdown (no ** or #); short dash lists are fine."""
+8. Write plain text without Markdown (no ** or #); short dash lists are fine.
+9. When you describe a project, always say its name (for example Astra or Behengam).
+10. Questions about which tools, assistants or help Hootan used to write his code are \
+not covered by the sources: reply with {HANDOFF}."""
 
 
 def sources_block(hits: list[Hit]) -> str:
