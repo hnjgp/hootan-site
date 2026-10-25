@@ -18,7 +18,7 @@ from app.security.visitor import visitor_id
 
 router = APIRouter(prefix="/api")
 
-JOBFIT_LIMITERS = (RateLimiter(5, timedelta(days=1)),)
+JOBFIT_LIMITERS = (RateLimiter(3, timedelta(days=1)),)
 jobfit_limits = limit_by_ip(*JOBFIT_LIMITERS)
 
 FALLBACK_TEXT = {

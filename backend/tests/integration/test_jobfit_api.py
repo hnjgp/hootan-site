@@ -109,9 +109,9 @@ async def test_ai_off_answers_503_without_a_call(api, session):
     assert await session.scalar(select(func.count(JobFitRequest.id))) == 0
 
 
-async def test_sixth_request_in_a_day_is_limited(api):
-    api.fake.replies = [json.dumps(REPLY)] * 5
-    for _ in range(5):
+async def test_fourth_request_in_a_day_is_limited(api):
+    api.fake.replies = [json.dumps(REPLY)] * 3
+    for _ in range(3):
         assert (await post(api)).status_code == 200
 
     assert (await post(api)).status_code == 429
