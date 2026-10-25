@@ -7,9 +7,10 @@ from sqlalchemy import select
 from app.config import get_settings
 from app.db.models import ChatLog, Lead
 from app.db.session import get_session
+from app.llm.client import get_llm_client
 from app.llm.fake import FakeLLMClient
 from app.main import app
-from app.twin.api import CHAT_LIMITERS, LEAD_LIMITERS, get_llm_client
+from app.twin.api import CHAT_LIMITERS, LEAD_LIMITERS
 from app.twin.ingest import ingest
 from app.twin.prompt import HANDOFF
 

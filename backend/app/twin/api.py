@@ -1,6 +1,5 @@
 """Twin chat over Server-Sent Events, and the lead form for questions it cannot answer."""
 
-import hashlib
 from collections.abc import AsyncIterator
 from datetime import timedelta
 from typing import Annotated, Literal
@@ -10,12 +9,12 @@ from fastapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import Settings, get_settings
 from app.db.models import ChatLog, Lead
 from app.db.session import get_session
 from app.llm.budget import BudgetExceeded
-from app.llm.client import Completion, LLMClient
+from app.llm.client import Completion, LLMClient, get_llm_client
 from app.security.rate_limit import RateLimiter, limit_by_ip
+from app.security.visitor import visitor_id
 from app.twin.chunking import detect_lang
 from app.twin.prompt import HANDOFF, build_messages, filter_output, is_handoff
 from app.twin.retrieval import Hit, search
@@ -63,19 +62,8 @@ class LeadRequest(BaseModel):
     question: str = Field(min_length=1, max_length=500)
 
 
-def get_llm_client() -> LLMClient:
-    """FastAPI dependency for the real client; tests override it with the fake."""
-    return LLMClient(get_settings())
-
-
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 ClientDep = Annotated[LLMClient, Depends(get_llm_client)]
-
-
-def visitor_id(request: Request, settings: Settings) -> str:
-    """Salted hash of the client IP, so raw IPs are never stored."""
-    raw = f"{settings.secret_key}:{request.client.host}"
-    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 def event(name: str, data) -> ServerSentEvent:

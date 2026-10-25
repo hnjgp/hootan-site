@@ -9,7 +9,7 @@ from openai.lib._pydantic import to_strict_json_schema
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.db.models import LLMUsage
 from app.llm.budget import check_budget
 from app.llm.pricing import cost_usd
@@ -185,3 +185,8 @@ class LLMClient:
         """Embed a batch of texts; return the vectors and the input token count."""
         response = await self.api.embeddings.create(model=model, input=texts)
         return [d.embedding for d in response.data], response.usage.prompt_tokens
+
+
+def get_llm_client() -> LLMClient:
+    """FastAPI dependency for the real client; tests override it with the fake."""
+    return LLMClient(get_settings())
