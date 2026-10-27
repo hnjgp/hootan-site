@@ -33,7 +33,9 @@ def make_client() -> httpx2.AsyncClient:
 
 async def fetch_nobitex(client: httpx2.AsyncClient) -> Decimal:
     """Latest trade price from Nobitex market stats."""
-    r = await client.get(NOBITEX_URL, params={"srcCurrency": "btc", "dstCurrency": "usdt"})
+    r = await client.get(
+        NOBITEX_URL, params={"srcCurrency": "btc", "dstCurrency": "usdt"}
+    )
     r.raise_for_status()
     return Decimal(r.json()["stats"]["btc-usdt"]["latest"])
 
@@ -66,7 +68,12 @@ async def fetch_daily_closes(client: httpx2.AsyncClient, days: int = 60) -> pd.S
     The last value is today's unfinished candle, so its close is the current price.
     """
     now = int(time.time())
-    params = {"symbol": "BTCUSDT", "resolution": "D", "from": now - days * 86400, "to": now}
+    params = {
+        "symbol": "BTCUSDT",
+        "resolution": "D",
+        "from": now - days * 86400,
+        "to": now,
+    }
     r = await client.get(NOBITEX_HISTORY_URL, params=params)
     r.raise_for_status()
     data = r.json()

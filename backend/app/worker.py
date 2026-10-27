@@ -24,7 +24,9 @@ async def price_job() -> None:
 
 async def main() -> None:
     """Run one price job right away, then on every 5-minute mark until stopped."""
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
+    )
     scheduler = AsyncIOScheduler(timezone="Asia/Tehran")
     scheduler.add_job(price_job, "cron", minute="*/5")
     scheduler.start()

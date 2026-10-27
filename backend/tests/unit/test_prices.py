@@ -17,7 +17,7 @@ def client_for(handler) -> httpx2.AsyncClient:
 async def test_uses_nobitex_when_it_works():
     async with client_for(lambda req: httpx2.Response(200, json=NOBITEX_OK)) as c:
         quote = await fetch_btc_price(c, backoff=0)
-    assert quote.price == Decimal("80525")
+    assert quote.price == Decimal(80525)
     assert quote.source == "nobitex"
 
 
@@ -32,11 +32,13 @@ async def test_falls_back_to_wallex_after_nobitex_retries():
 
     async with client_for(handler) as c:
         quote = await fetch_btc_price(c, backoff=0)
-    assert quote == Quote(Decimal("80325"), "wallex")
+    assert quote == Quote(Decimal(80325), "wallex")
     assert calls.count("apiv2.nobitex.ir") == 3
 
 
 async def test_bad_reply_counts_as_failure():
-    async with client_for(lambda req: httpx2.Response(200, json={"status": "failed"})) as c:
+    async with client_for(
+        lambda req: httpx2.Response(200, json={"status": "failed"})
+    ) as c:
         with pytest.raises(PriceUnavailable):
             await fetch_btc_price(c, backoff=0)

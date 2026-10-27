@@ -22,7 +22,9 @@ async def save_price(session: AsyncSession, quote: Quote, ts: datetime) -> bool:
     """Store the quote in ts's slot; return False if that slot already has a price."""
     stmt = (
         insert(MarketPrice)
-        .values(ts=slot_start(ts), symbol=SYMBOL, price=quote.price, source=quote.source)
+        .values(
+            ts=slot_start(ts), symbol=SYMBOL, price=quote.price, source=quote.source
+        )
         .on_conflict_do_nothing()
         .returning(MarketPrice.id)
     )
