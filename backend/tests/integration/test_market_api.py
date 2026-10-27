@@ -52,6 +52,6 @@ async def test_unknown_range_is_rejected(api):
     assert response.status_code == 422
 
 
-def test_season_starts_on_the_first_at_tehran_midnight():
+def test_season_starts_at_0900_on_the_first_of_the_persian_month():
     now = datetime(2026, 10, 27, 8, 0, tzinfo=UTC)
-    assert window_start("season", now) == datetime(2026, 9, 30, 20, 30, tzinfo=UTC)
+    assert window_start("season", now) == datetime(2026, 10, 23, 5, 30, tzinfo=UTC)

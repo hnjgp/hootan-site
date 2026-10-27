@@ -2,7 +2,6 @@
 
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
@@ -10,11 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import MarketPrice
 from app.db.session import get_session
+from app.game.season import season_start
 from app.market.collector import SYMBOL
 
 router = APIRouter(prefix="/api")
 
-TEHRAN = ZoneInfo("Asia/Tehran")
 ORIGIN = datetime(2000, 1, 1, tzinfo=UTC)
 Period = Literal["24h", "7d", "season"]
 # One chart point per bucket keeps every range near 150-300 points.
@@ -27,11 +26,9 @@ SPAN = {"24h": timedelta(hours=24), "7d": timedelta(days=7)}
 
 
 def window_start(period: Period, now: datetime) -> datetime:
-    """Start of the range; a season starts at midnight on the 1st of the month in Tehran."""
+    """Start of the range; a season is the leaderboard's Persian month."""
     if period == "season":
-        return now.astimezone(TEHRAN).replace(
-            day=1, hour=0, minute=0, second=0, microsecond=0
-        )
+        return season_start(now)
     return now - SPAN[period]
 
 

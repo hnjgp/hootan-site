@@ -55,7 +55,8 @@ async def test_one_prediction_per_player_per_day(session):
                 player_id=player.id,
                 game_date=DAY,
                 direction="up",
-                stake=10,
+                stake_pct=10,
+                stake_usd=10_000,
                 ref_price=Decimal("100000.00"),
             )
         )

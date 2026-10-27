@@ -34,19 +34,22 @@ def created_at_column() -> Mapped[datetime]:
 
 
 class Player(Base):
-    """Anonymous player identified by a cookie UUID and a nickname."""
+    """Anonymous player identified by a signed cookie and a nickname; virtual USD wallet."""
 
     __tablename__ = "players"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     nickname: Mapped[str] = mapped_column(String(20), unique=True)
+    balance_usd: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), default=Decimal(100_000), server_default="100000"
+    )
     recovery_token_hash: Mapped[str | None] = mapped_column(String(64))
     created_ip_hash: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = created_at_column()
 
 
 class Prediction(Base):
-    """One up/down prediction per player per trading day."""
+    """One up/down prediction per player per trading day, staking a share of the wallet."""
 
     __tablename__ = "predictions"
     __table_args__ = (UniqueConstraint("player_id", "game_date"),)
@@ -57,10 +60,11 @@ class Prediction(Base):
     )
     game_date: Mapped[date] = mapped_column(Date)
     direction: Mapped[str] = mapped_column(String(4))
-    stake: Mapped[int] = mapped_column(Integer)
+    stake_pct: Mapped[int] = mapped_column(Integer)
+    stake_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     ref_price: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     result: Mapped[str | None] = mapped_column(String(4))
-    points: Mapped[int | None] = mapped_column(Integer)
+    pnl_usd: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
     created_at: Mapped[datetime] = created_at_column()
 
 

@@ -2,7 +2,7 @@
 live or replay the last one, and list past meetings.
 
 Secret messages and the decision of the current trading day never leave the
-server until the visitor predicts (CLAUDE.md 4.2); that unlock comes in phase 8.
+server until the visitor's player cookie has today's prediction (CLAUDE.md 4.2).
 """
 
 from datetime import UTC, date, datetime, timedelta
@@ -12,8 +12,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import SessionEvent, TradingSession
+from app.db.models import Player, Prediction, SessionEvent, TradingSession
 from app.db.session import get_session
+from app.game.players import current_player
 from app.security.rate_limit import RateLimiter, limit_by_ip
 from app.trading.run import get_or_create, trading_day
 
@@ -56,9 +57,23 @@ def event_out(event: SessionEvent, hide: bool) -> dict:
     }
 
 
-def session_out(row: TradingSession, today: date) -> dict:
-    """Summary of a meeting; today's decision stays secret."""
-    secret = row.session_date == today
+async def has_predicted(
+    session: AsyncSession, player: Player | None, today: date
+) -> bool:
+    """True when the player already predicted this trading day."""
+    if player is None:
+        return False
+    found = await session.scalar(
+        select(Prediction.id)
+        .where(Prediction.player_id == player.id)
+        .where(Prediction.game_date == today)
+    )
+    return found is not None
+
+
+def session_out(row: TradingSession, today: date, unlocked: bool) -> dict:
+    """Summary of a meeting; today's decision stays secret until the visitor predicts."""
+    secret = row.session_date == today and not unlocked
     return {
         "id": row.id,
         "session_date": row.session_date,
@@ -74,6 +89,7 @@ def session_out(row: TradingSession, today: date) -> dict:
 @router.get("/sessions/today")
 async def today_session(
     session: Annotated[AsyncSession, Depends(get_session)],
+    player: Annotated[Player | None, Depends(current_player)],
     after: Annotated[int, Query(ge=0)] = 0,
 ) -> dict:
     """The meeting to show, with its events after seq `after` (for live polling).
@@ -103,9 +119,10 @@ async def today_session(
         .where(SessionEvent.seq > after)
         .order_by(SessionEvent.seq)
     )
-    secret = shown.session_date == today
+    unlocked = await has_predicted(session, player, today)
+    secret = shown.session_date == today and not unlocked
     return body | {
-        "session": session_out(shown, today)
+        "session": session_out(shown, today, unlocked)
         | {"events": [event_out(e, secret and e.is_secret) for e in events]}
     }
 
@@ -113,6 +130,7 @@ async def today_session(
 @router.get("/sessions/history")
 async def history(
     session: Annotated[AsyncSession, Depends(get_session)],
+    player: Annotated[Player | None, Depends(current_player)],
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
 ) -> list[dict]:
     """Past and current meetings, newest first, without their events."""
@@ -120,4 +138,5 @@ async def history(
     rows = await session.scalars(
         select(TradingSession).order_by(TradingSession.session_date.desc()).limit(limit)
     )
-    return [session_out(r, today) for r in rows]
+    unlocked = await has_predicted(session, player, today)
+    return [session_out(r, today, unlocked) for r in rows]

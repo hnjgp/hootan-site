@@ -1,6 +1,6 @@
-"""Scheduled jobs: the BTC price, stop loss and hourly snapshot every 5 minutes
-(no LLM), and queued trading meetings every 5 seconds (a visitor's click queues
-at most one per day)."""
+"""Scheduled jobs: the BTC price, stop loss, settling the game after 09:00 and the
+hourly snapshot every 5 minutes (no LLM), and queued trading meetings every 5
+seconds (a visitor's click queues at most one per day)."""
 
 import asyncio
 import logging
@@ -10,6 +10,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import get_settings
 from app.db.session import SessionLocal
+from app.game.settle import settle_predictions
 from app.llm.client import LLMClient
 from app.market.collector import collect_price, slot_start
 from app.market.prices import PriceUnavailable
@@ -20,9 +21,11 @@ log = logging.getLogger("worker")
 
 
 async def price_job() -> None:
-    """Store one price, check the stop loss and, on the hour, snapshot the portfolio.
+    """Store one price, check the stop loss, settle yesterday's predictions and, on
+    the hour, snapshot the portfolio.
 
-    If every source fails, log it and wait for the next run.
+    At 09:00 the first run settles the day before; if every source fails, log it and
+    the next run settles with its price.
     """
     try:
         async with SessionLocal() as session:
@@ -30,6 +33,10 @@ async def price_job() -> None:
             log.info("price %s from %s", quote.price, quote.source)
             if sale := await check_stop(session, quote.price):
                 log.warning("stop loss: sold %s BTC at %s", sale.qty, sale.price)
+            if settled := await settle_predictions(
+                session, quote.price, datetime.now(UTC)
+            ):
+                log.info("settled %s predictions at %s", settled, quote.price)
             slot = slot_start(datetime.now(UTC))
             if slot.minute == 0:
                 await take_snapshot(session, quote.price, slot)
