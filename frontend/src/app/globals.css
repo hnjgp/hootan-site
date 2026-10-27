@@ -1,7 +1,170 @@
 @import "tailwindcss";
 
+:root {
+  --bg: #f3ebdd;
+  --card: #fffdf8;
+  --ink: #1e1c1a;
+  --muted: #4a453e;
+  --line: #1e1c1a;
+  --soft: #e6dcc9;
+  --accent: #a8420c;
+  --paper: #f3ebdd;
+  --head: rgba(243, 235, 221, 0.95);
+  --inv: #1e1c1a;
+  --invInk: #f3ebdd;
+  --green: #1f6b4e;
+  --input: #ffffff;
+  --orange: #e8692a;
+  color-scheme: light;
+}
+
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161c;
+    --card: #1f212a;
+    --ink: #ede6d8;
+    --muted: #b5aea1;
+    --line: #cfc7b8;
+    --soft: #2c2f3a;
+    --accent: #f2914f;
+    --paper: #efe5d3;
+    --head: rgba(21, 22, 28, 0.93);
+    --inv: #ede6d8;
+    --invInk: #15161c;
+    --green: #6fd3a8;
+    --input: #15161c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15161c;
+  --card: #1f212a;
+  --ink: #ede6d8;
+  --muted: #b5aea1;
+  --line: #cfc7b8;
+  --soft: #2c2f3a;
+  --accent: #f2914f;
+  --paper: #efe5d3;
+  --head: rgba(21, 22, 28, 0.93);
+  --inv: #ede6d8;
+  --invInk: #15161c;
+  --green: #6fd3a8;
+  --input: #15161c;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-soft: var(--soft);
+  --color-accent: var(--accent);
+  --color-paper: var(--paper);
+  --color-head: var(--head);
+  --color-inv: var(--inv);
+  --color-inv-ink: var(--invInk);
+  --color-green: var(--green);
+  --color-input: var(--input);
+  --color-orange: var(--orange);
+  --font-sans: "DM Sans Variable", system-ui, sans-serif;
+  --font-hand: "Caveat Variable", cursive;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-fa: "Vazirmatn Variable", system-ui, sans-serif;
+}
+
 body {
-  background: #f3ebdd;
-  color: #1e1c1a;
-  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+}
+html[lang="fa"] body {
+  font-family: var(--font-fa);
+}
+html[lang="fa"] .font-hand {
+  font-family: var(--font-fa);
+  font-weight: 600;
+  font-size: 0.7em;
+}
+html[lang="fa"] h1,
+html[lang="fa"] h2 {
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+a {
+  color: var(--accent);
+}
+:focus-visible {
+  outline: 2.5px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.btn {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.btn:hover {
+  transform: translate(-1px, -1px);
+}
+.btn:active {
+  transform: scale(0.96);
+}
+
+.chip:hover {
+  background: var(--inv);
+  color: var(--invInk);
+}
+.swap .alt {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.swap:hover .alt,
+.swap:focus-visible .alt {
+  opacity: 1;
+}
+
+.pulse {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.theme-sun {
+  display: none;
+}
+:root[data-theme="dark"] .theme-sun {
+  display: block;
+}
+:root[data-theme="dark"] .theme-moon {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-sun {
+    display: block;
+  }
+  :root:not([data-theme="light"]) .theme-moon {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
