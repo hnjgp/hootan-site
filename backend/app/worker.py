@@ -1,5 +1,6 @@
-"""Scheduled jobs: the BTC price every 5 minutes (no LLM), and queued trading
-meetings every 5 seconds (a visitor's click queues at most one per day)."""
+"""Scheduled jobs: the BTC price, stop loss and hourly snapshot every 5 minutes
+(no LLM), and queued trading meetings every 5 seconds (a visitor's click queues
+at most one per day)."""
 
 import asyncio
 import logging
@@ -10,19 +11,28 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import get_settings
 from app.db.session import SessionLocal
 from app.llm.client import LLMClient
-from app.market.collector import collect_price
+from app.market.collector import collect_price, slot_start
 from app.market.prices import PriceUnavailable
+from app.trading.guard import check_stop, take_snapshot
 from app.trading.run import claim_scheduled, fail_stale, hold_meeting
 
 log = logging.getLogger("worker")
 
 
 async def price_job() -> None:
-    """Fetch and store one price; if every source fails, log it and wait for the next run."""
+    """Store one price, check the stop loss and, on the hour, snapshot the portfolio.
+
+    If every source fails, log it and wait for the next run.
+    """
     try:
         async with SessionLocal() as session:
             quote = await collect_price(session)
-        log.info("price %s from %s", quote.price, quote.source)
+            log.info("price %s from %s", quote.price, quote.source)
+            if sale := await check_stop(session, quote.price):
+                log.warning("stop loss: sold %s BTC at %s", sale.qty, sale.price)
+            slot = slot_start(datetime.now(UTC))
+            if slot.minute == 0:
+                await take_snapshot(session, quote.price, slot)
     except PriceUnavailable:
         log.warning("price unavailable from every source")
 
@@ -41,7 +51,9 @@ async def main() -> None:
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
     )
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    # Two lines per 5-second run would be about 35,000 lines a day.
+    for name in ("httpx", "httpx2", "apscheduler.executors"):
+        logging.getLogger(name).setLevel(logging.WARNING)
     async with SessionLocal() as session:
         if stale := await fail_stale(session, datetime.now(UTC)):
             log.warning("%s abandoned trading session(s) marked failed", stale)
