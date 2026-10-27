@@ -95,9 +95,14 @@ html[lang="fa"] .font-hand {
 html[lang="fa"] h1,
 html[lang="fa"] h2 {
   letter-spacing: 0;
-  line-height: 1.35;
+}
+html[lang="fa"] h1 {
+  font-weight: 500;
 }
 
+html {
+  scroll-behavior: smooth;
+}
 a {
   color: var(--accent);
 }
@@ -129,6 +134,98 @@ a {
 .swap:hover .alt,
 .swap:focus-visible .alt {
   opacity: 1;
+}
+
+.hint .hint-text {
+  display: grid;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.25s ease;
+}
+.hint:hover .hint-text,
+.hint:focus-visible .hint-text {
+  max-height: 3em;
+  opacity: 1;
+}
+@media (hover: none) {
+  .hint .hint-text {
+    max-height: none;
+    opacity: 1;
+  }
+}
+
+.float-cloud {
+  animation: float-cloud 6s ease-in-out infinite;
+}
+@keyframes float-cloud {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -6px;
+  }
+}
+.type-a,
+.type-b {
+  animation: type 0.32s ease-in-out infinite alternate;
+}
+.type-b {
+  animation-delay: -0.16s;
+}
+@keyframes type {
+  to {
+    transform: translateY(-3px);
+  }
+}
+.blink {
+  animation: pulse 1s steps(2) infinite;
+}
+.drift-slow {
+  animation: drift 26s linear infinite;
+}
+.drift-fast {
+  animation: drift 17s linear infinite reverse;
+}
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateX(-30px);
+  }
+  50% {
+    transform: translateX(60px);
+  }
+}
+.waves {
+  animation: waves 3s linear infinite;
+}
+@keyframes waves {
+  to {
+    transform: translateX(60px);
+  }
+}
+.palm {
+  animation: palm 4.5s ease-in-out infinite;
+}
+@keyframes palm {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+.sun-rays {
+  animation: spin 40s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .pulse {

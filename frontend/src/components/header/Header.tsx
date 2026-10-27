@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { Dictionary, Locale } from "@/i18n";
+import { Contact } from "./Contact";
 import { LangSwitch } from "./LangSwitch";
-import { ModeTabs } from "./ModeTabs";
 import { ThemeToggle } from "./ThemeToggle";
 
-/** Sticky header shared by every page: name, the two tabs, theme, language and résumé. */
+/** Sticky header shared by every page: name, availability, contact, theme, language and résumé. */
 export function Header({ lang, t }: { lang: Locale; t: Dictionary["header"] }) {
   return (
     <header className="sticky top-0 z-20 border-b-[1.5px] border-line bg-head">
@@ -14,11 +14,12 @@ export function Header({ lang, t }: { lang: Locale; t: Dictionary["header"] }) {
           <img src="/assets/me_avatar_sm.jpg" alt="" className="h-[34px] w-[34px] rounded-full border-[1.5px] border-line" />
           <span className="text-[16px] font-semibold">{t.name}</span>
         </Link>
-        <ModeTabs lang={lang} label={t.modeLabel} portfolio={t.portfolio} trading={t.trading} />
+        <div className="inline-flex items-center gap-2 text-[14px] font-semibold text-green">
+          <span className="pulse h-2 w-2 shrink-0 rounded-full bg-green" aria-hidden="true" />
+          {t.open}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/${lang}#projects`} className="px-1.5 py-2.5 text-[15px] text-ink no-underline">
-            {t.projects}
-          </Link>
+          <Contact t={t} />
           <ThemeToggle label={t.themeLabel} />
           <LangSwitch lang={lang} label={t.langLabel} />
           <a

@@ -1,19 +1,41 @@
-import type { Dictionary } from "@/i18n";
+import { dirOf, type Dictionary, type Locale } from "@/i18n";
+import { SectionIcon } from "../icons";
+import { HeroScene } from "./HeroScene";
+import { RobotGame } from "./RobotGame";
 
-/** Top of the home page: handwritten welcome, headline, one-line pitch and availability. */
-export function Hero({ t }: { t: Dictionary["main"] }) {
+export const SECTION_IDS = ["twin", "job-fit", "trading", "projects", "how"] as const;
+
+/**
+ * Top of the home page: the drawing with the headline as a thought cloud on one side;
+ * on the other, five buttons that jump to the sections below (each shows a hint on hover)
+ * and the runaway "I'm not a robot" box.
+ */
+export function Hero({ lang, t, game }: { lang: Locale; t: Dictionary["main"]; game: Dictionary["game"] }) {
   return (
-    <section className="relative overflow-hidden">
-      <div className="relative mx-auto max-w-[1200px] px-4 pt-16 pb-2 text-center sm:px-6">
-        <div className="font-hand text-[30px] text-accent">{t.tag}</div>
-        <h1 className="mx-auto mt-1 mb-4 max-w-[920px] text-[clamp(34px,6vw,56px)] leading-[1.06] font-bold tracking-[-1px]">
-          {t.h1}
-        </h1>
-        <p className="mx-auto max-w-[660px] text-[18px] leading-[1.7] text-muted">{t.sub}</p>
-        <div className="mt-[18px] inline-flex items-center gap-2 text-[14px] font-semibold text-green">
-          <span className="pulse h-2 w-2 shrink-0 rounded-full bg-green" aria-hidden="true" />
-          {t.open}
-        </div>
+    <section className="mx-auto grid max-w-[1200px] items-center gap-8 px-4 pt-5 pb-16 sm:px-6 md:grid-cols-[1.1fr_1fr]">
+      <HeroScene tag={t.tag} title={t.h1} dir={dirOf(lang)} />
+      <div className="flex flex-col gap-5">
+        <nav className="flex flex-col gap-2">
+          {t.buttons.map((label, k) => (
+            <a
+              key={label}
+              href={`#${SECTION_IDS[k]}`}
+              className="hint btn group flex items-center gap-3 rounded-2xl border-2 border-line bg-card px-4 py-2 text-ink no-underline shadow-[3px_3px_0_var(--line)]"
+            >
+              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl border-[1.5px] border-line bg-bg transition-colors group-hover:bg-orange group-hover:text-[#1e1c1a] group-focus-visible:bg-orange">
+                <SectionIcon i={k} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-[16px] font-semibold">{label}</span>
+                <span className="hint-text text-[14px] text-muted">{t.hints[k]}</span>
+              </span>
+              <span aria-hidden="true" className="text-accent">
+                {lang === "fa" ? "←" : "→"}
+              </span>
+            </a>
+          ))}
+        </nav>
+        <RobotGame g={game} />
       </div>
     </section>
   );

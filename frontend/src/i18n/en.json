@@ -1,19 +1,17 @@
 {
   "header": {
     "name": "Hootan Seifi",
-    "portfolio": "Portfolio",
-    "trading": "AI Trading Floor",
-    "projects": "Projects",
     "resume": "Download résumé",
     "themeLabel": "Switch light or dark mode",
     "langLabel": "Language",
-    "modeLabel": "Site mode"
+    "open": "Open to work · On-site, remote, hybrid or project-based",
+    "contact": "Contact me",
+    "email": "Email",
+    "phone": "Phone"
   },
   "main": {
     "tag": "come in, take a seat",
-    "h1": "Hi, I'm Hootan. I teach AI to do real work, not just talk.",
-    "sub": "Interview my digital twin, check how I fit your role, or watch my AI trading team at work.",
-    "open": "Open to AI Engineer roles · On-site, remote, hybrid or project-based",
+    "h1": "Hi, I'm Hootan.\nI build things with AI that actually work.",
     "desk": "the interview desk",
     "b1": "Hi, I'm Hootan's digital twin. Ask me anything about his work.",
     "q1": "What's your strongest project?",
@@ -51,6 +49,32 @@
     "howTag": "how this site works",
     "howText": "Next.js, FastAPI and PostgreSQL/pgvector in Docker on one VPS, deployed by GitHub Actions behind Caddy. Every AI call has a daily budget cap.",
     "arch": "See the architecture",
-    "email": "Email"
+    "email": "Email",
+    "buttons": [
+      "Interview my digital twin",
+      "How well I fit your job ad",
+      "My AI trading agents",
+      "Projects",
+      "How I built this site"
+    ],
+    "hints": [
+      "Ask my twin anything about my work.",
+      "Paste your job ad; get an honest score with strengths and gaps.",
+      "Seven agents meet every day. See if you can beat them.",
+      "Things I've built, from idea to production.",
+      "Architecture, decisions and the monthly bill of this very site."
+    ]
+  },
+  "game": {
+    "title": "Prove you're not a robot",
+    "label": "I'm not a robot",
+    "count": "Tries",
+    "taunts": [
+      "Just one little tick.",
+      "Are you sure you're not a robot?",
+      "That's what the robots said too.",
+      "Even Hootan's agents fail this one.",
+      "Okay, fine. You're not a robot."
+    ]
   }
 }
