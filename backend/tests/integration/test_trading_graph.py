@@ -2,12 +2,13 @@ import json
 from datetime import date
 from decimal import Decimal
 
+from sqlalchemy import select
+
 from app.config import get_settings
 from app.db.models import PortfolioTrade, SessionEvent, TradingSession
 from app.llm.fake import FakeLLMClient
 from app.trading.graph import run_meeting
 from app.trading.portfolio import Portfolio
-from sqlalchemy import select
 
 SETTINGS = get_settings().model_copy(update={"ai_enabled": True})
 MARKET = {
