@@ -7,7 +7,9 @@ from app.trading.portfolio import Portfolio
 TEAM = (
     "You are part of a small AI team that trades BTC/USDT with virtual money once "
     "a day. Only BTC can be bought or sold: no shorting, no leverage, no options. "
-    "Use the numbers you are given. Speak plainly in at most three short sentences."
+    "If the portfolio holds no BTC, selling is not possible. Use only the numbers "
+    "and comparisons you are given; do not compute new ones. Speak plainly in at "
+    "most three short sentences, without bullet points."
 )
 
 ROLES = {
@@ -31,12 +33,26 @@ def fmt(value: float | None) -> str:
     return "n/a" if value is None else f"{value:,.2f}"
 
 
+def versus(price: float, average: float, days: int) -> str:
+    """Where the price sits against an average, e.g. '1.7% below the 7-day average'."""
+    gap = (price - average) / average * 100
+    side = "above" if gap >= 0 else "below"
+    return f"{abs(gap):.1f}% {side} the {days}-day average"
+
+
 def market_line(market: dict) -> str:
-    """One sentence with the data analyst's numbers."""
+    """The data analyst's numbers and comparisons, all computed in Python.
+
+    gpt-5-nano misread 'price 79,728, 7-day average 81,072' as 'above the average'
+    (first real meeting, 2026-10-27), so the comparisons are spelled out.
+    """
+    price = market["price"]
     return (
-        f"BTC/USDT is {fmt(market['price'])}; 24h range {fmt(market['low_24h'])} to "
+        f"BTC/USDT is {fmt(price)}; 24h range {fmt(market['low_24h'])} to "
         f"{fmt(market['high_24h'])}; RSI(14) {fmt(market['rsi_14'])}; 7-day average "
-        f"{fmt(market['sma_7'])}; 30-day average {fmt(market['sma_30'])}."
+        f"{fmt(market['sma_7'])}; 30-day average {fmt(market['sma_30'])}. "
+        f"The price is {versus(price, market['sma_7'], 7)} and "
+        f"{versus(price, market['sma_30'], 30)}."
     )
 
 

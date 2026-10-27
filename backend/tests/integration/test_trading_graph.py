@@ -81,5 +81,5 @@ async def test_invalid_trader_reply_holds_without_asking_the_pm(session):
     assert client.replies == []
     assert len(client.calls) == 4
     assert await session.scalar(select(PortfolioTrade)) is None
-    assert row.decision == "HOLD"
+    assert (row.decision, row.qty) == ("HOLD", None)
     assert (await events(session, row))[-1].agent == "pm"

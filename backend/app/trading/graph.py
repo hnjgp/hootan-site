@@ -108,6 +108,19 @@ def describe(order: Order) -> str:
     return order.action if order.action == "HOLD" else f"{order.action} {order.qty} BTC"
 
 
+def code_check(order: Order) -> str:
+    """What the risk code did, stated plainly.
+
+    With only 'Notes: none', the risk manager and PM claimed the size had been cut
+    when it had not (first real meeting, 2026-10-27).
+    """
+    if order.notes:
+        text = f"Code check changed the proposal: {' '.join(order.notes)}"
+    else:
+        text = "Code check: the proposal passed every rule unchanged."
+    return f"{text} Checked order: {describe(order)}."
+
+
 async def data(state: State, runtime: Runtime[Meeting]) -> State:
     line = prompts.market_line(state["market"])
     briefing = f"{line}\n{prompts.portfolio_line(state['portfolio'], state['price'])}"
@@ -147,8 +160,7 @@ async def trader(state: State, runtime: Runtime[Meeting]) -> State:
 
 async def risk(state: State, runtime: Runtime[Meeting]) -> State:
     order = check_proposal(state["proposal"], state["portfolio"], state["price"])
-    check = f"Code check result: {describe(order)}. Notes: {' '.join(order.notes) or 'none'}"
-    text = await speak(runtime.context, "risk", state, extra=check)
+    text = await speak(runtime.context, "risk", state, extra=code_check(order))
     payload = {"action": order.action, "qty": str(order.qty), "notes": order.notes}
     lines = await record(
         runtime.context, "risk", "risk", text, payload=payload, secret=True
@@ -160,9 +172,7 @@ async def pm(state: State, runtime: Runtime[Meeting]) -> State:
     m, order, price = runtime.context, state["order"], state["price"]
     decision = None
     if order.action != "HOLD":
-        decision = await decide(
-            m, "pm", state, PMDecision, extra=f"Checked order: {describe(order)}."
-        )
+        decision = await decide(m, "pm", state, PMDecision, extra=code_check(order))
     final = apply_pm(order, decision, price)
     text = decision.reason if decision else "Nothing to trade today; we hold."
     text += f" Final decision: {describe(final)}"
@@ -193,7 +203,8 @@ async def execute(state: State, runtime: Runtime[Meeting]) -> State:
                 reason="Daily meeting decision",
             )
         )
-    m.row.decision, m.row.qty, m.row.price = order.action, order.qty, price
+    m.row.decision, m.row.price = order.action, price
+    m.row.qty = None if order.action == "HOLD" else order.qty
     await m.db.commit()
     return {}
 
