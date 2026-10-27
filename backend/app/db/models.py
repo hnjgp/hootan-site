@@ -113,6 +113,39 @@ class SessionEvent(Base):
     created_at: Mapped[datetime] = created_at_column()
 
 
+class PortfolioTrade(Base):
+    """One buy or sell of the AI team; the portfolio is the sum of these.
+
+    session_id is empty for a stop-loss sell made by code between sessions.
+    """
+
+    __tablename__ = "portfolio_trades"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    session_id: Mapped[int | None] = mapped_column(
+        ForeignKey("trading_sessions.id", ondelete="CASCADE")
+    )
+    side: Mapped[str] = mapped_column(String(4))
+    qty: Mapped[Decimal] = mapped_column(Numeric(18, 8))
+    price: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    stop_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    reason: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class PortfolioSnapshot(Base):
+    """Portfolio value at one moment next to the buy-and-hold value, for the chart."""
+
+    __tablename__ = "portfolio_snapshots"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), unique=True)
+    cash: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    btc_qty: Mapped[Decimal] = mapped_column(Numeric(18, 8))
+    value_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    hold_value_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+
+
 class LLMUsage(Base):
     """Cost record of a single LLM call; the budget guard sums these."""
 
