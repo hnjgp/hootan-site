@@ -127,6 +127,16 @@ async def test_lead_is_stored(api, session):
     assert (lead.email, lead.context) == ("hr@example.com", "Salary?")
 
 
+async def test_sixth_lead_in_a_day_is_limited(api):
+    body = {"email": "hr@example.com", "question": "Salary?"}
+    for _ in range(5):
+        assert (await api.post("/api/leads", json=body)).status_code == 201
+
+    response = await api.post("/api/leads", json=body)
+
+    assert response.status_code == 429
+
+
 async def test_invalid_lead_email_is_rejected(api):
     response = await api.post("/api/leads", json={"email": "abc@", "question": "q"})
 
