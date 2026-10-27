@@ -4,12 +4,14 @@ from fastapi import FastAPI
 
 from app.jobfit.api import router as jobfit_router
 from app.market.api import router as market_router
+from app.trading.api import router as trading_router
 from app.twin.api import router as twin_router
 
 app = FastAPI(title="hootanseifi.com API")
 app.include_router(twin_router)
 app.include_router(jobfit_router)
 app.include_router(market_router)
+app.include_router(trading_router)
 
 
 @app.get("/api/health")
