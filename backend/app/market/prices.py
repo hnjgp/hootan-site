@@ -1,12 +1,15 @@
 """BTC/USDT price from Iranian exchanges: Nobitex first, Wallex as fallback."""
 
 import asyncio
+import time
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 
 import httpx2
+import pandas as pd
 
 NOBITEX_URL = "https://apiv2.nobitex.ir/market/stats"
+NOBITEX_HISTORY_URL = "https://apiv2.nobitex.ir/market/udf/history"
 WALLEX_URL = "https://api.wallex.ir/v1/trades"
 RETRIES = 2
 
@@ -55,6 +58,19 @@ async def fetch_btc_price(client: httpx2.AsyncClient, backoff: float = 1) -> Quo
                 if attempt < RETRIES:
                     await asyncio.sleep(backoff * 2**attempt)
     raise PriceUnavailable
+
+
+async def fetch_daily_closes(client: httpx2.AsyncClient, days: int = 60) -> pd.Series:
+    """Daily closes from Nobitex, oldest first; days start at Tehran midnight.
+
+    The last value is today's unfinished candle, so its close is the current price.
+    """
+    now = int(time.time())
+    params = {"symbol": "BTCUSDT", "resolution": "D", "from": now - days * 86400, "to": now}
+    r = await client.get(NOBITEX_HISTORY_URL, params=params)
+    r.raise_for_status()
+    data = r.json()
+    return pd.Series(data["c"], index=pd.to_datetime(data["t"], unit="s", utc=True))
 
 
 async def _main() -> None:
