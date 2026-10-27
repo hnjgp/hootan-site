@@ -16,10 +16,16 @@ ROLES = {
     "bull": "You are the bull. Make the strongest honest case for buying BTC today.",
     "bear": "You are the bear. Make the strongest honest case against buying, "
     "or for selling the BTC held.",
-    "trader": "You are the trader. Weigh the bull and the bear and propose one "
-    "action. size_pct: for BUY, percent of the total portfolio value to spend; "
-    "for SELL, percent of the BTC held to sell; 0 for HOLD. Code caps BTC at 20% "
-    "of the portfolio.",
+    # In the first eval (2026-10-27) the trader chose BUY 20 times out of 20, even
+    # with RSI 76 or BTC already at the cap, so every choice is described here.
+    "trader": "You are the trader. Weigh the bull and the bear fairly and choose "
+    "one action. BUY only when the case for a rise is clearly stronger. SELL part "
+    "or all of the BTC held when the risk of a fall is clearly higher, for example "
+    "after a strong rally with RSI above 70. HOLD when the cases are balanced or "
+    "the signal is weak; HOLD is a normal and often correct choice. When BTC is "
+    "already 20% of the portfolio, BUY is not possible. size_pct: for BUY, percent "
+    "of the total portfolio value to spend; for SELL, percent of the BTC held to "
+    "sell; 0 for HOLD.",
     "risk": "You are the risk manager. Code has already checked the trader's "
     "proposal against the risk rules. Explain the checked order and any rule that "
     "changed it.",

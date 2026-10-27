@@ -40,6 +40,13 @@ def test_buy_counts_btc_already_held():
     assert order.qty == Decimal("0.15")
 
 
+def test_buy_of_zero_percent_is_hold_with_the_true_reason():
+    """Eval 2026-10-27: 'BUY 0%' with cash only was logged as 'already at 20%'."""
+    order = check_proposal(proposal("BUY", 0), Portfolio(), PRICE)
+    assert order.action == "HOLD"
+    assert "zero" in order.notes[0]
+
+
 def test_buy_at_the_limit_becomes_hold():
     full = Portfolio(cash=Decimal(80_000), btc_qty=Decimal("0.25"))
     assert check_proposal(proposal("BUY", 10), full, PRICE).action == "HOLD"

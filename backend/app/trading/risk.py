@@ -47,6 +47,8 @@ def check_proposal(
         qty = (portfolio.btc_qty * pct).quantize(SATOSHI, ROUND_DOWN)
         return Order("SELL", qty) if qty > 0 else hold("SELL size was zero.")
 
+    if pct == 0:
+        return hold("BUY size was zero.")
     value = portfolio.value(price)
     wanted = value * pct
     room = min(value * MAX_BTC_SHARE - portfolio.btc_qty * price, portfolio.cash)
