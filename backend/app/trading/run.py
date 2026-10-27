@@ -9,7 +9,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +25,8 @@ from app.trading.translate import translate_session
 
 log = logging.getLogger("trading")
 DAY_START = timedelta(hours=9)
+# A real meeting takes about a minute; one still running after this was abandoned.
+STALE_AFTER = timedelta(minutes=10)
 
 
 def trading_day(now: datetime) -> date:
@@ -47,6 +49,38 @@ async def get_or_create(
         select(TradingSession).where(TradingSession.session_date == day)
     )
     return row, created is not None
+
+
+async def claim_scheduled(db: AsyncSession) -> list[TradingSession]:
+    """Move queued sessions to running in one statement and return them.
+
+    Postgres locks each row it updates, so two workers never claim the same one.
+    """
+    ids = await db.scalars(
+        update(TradingSession)
+        .where(TradingSession.status == "scheduled")
+        .values(status="running", started_at=func.now())
+        .returning(TradingSession.id)
+    )
+    ids = list(ids)
+    await db.commit()
+    if not ids:
+        return []
+    return list(
+        await db.scalars(select(TradingSession).where(TradingSession.id.in_(ids)))
+    )
+
+
+async def fail_stale(db: AsyncSession, now: datetime) -> int:
+    """Mark sessions left running by a stopped worker as failed; return how many."""
+    result = await db.execute(
+        update(TradingSession)
+        .where(TradingSession.status == "running")
+        .where(TradingSession.started_at < now - STALE_AFTER)
+        .values(status="failed", finished_at=now)
+    )
+    await db.commit()
+    return result.rowcount
 
 
 async def hold_meeting(
