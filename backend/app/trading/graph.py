@@ -1,8 +1,6 @@
 """The daily meeting as a LangGraph graph with a fixed order of seven speakers.
 
 Each node saves its event right away, so the first visitor can watch live.
-Messages of the trader, risk manager and portfolio manager are secret until the
-visitor predicts (CLAUDE.md 4.2).
 """
 
 import operator
@@ -62,7 +60,6 @@ async def record(
     kind: str,
     text: str,
     payload: dict | None = None,
-    secret: bool = False,
 ) -> list[str]:
     """Save one event and commit it for live viewers; return its transcript line."""
     m.seq += 1
@@ -74,7 +71,6 @@ async def record(
             kind=kind,
             text_en=text,
             payload=payload,
-            is_secret=secret,
         )
     )
     await m.db.commit()
@@ -152,9 +148,7 @@ async def trader(state: State, runtime: Runtime[Meeting]) -> State:
     else:
         text = f"{proposal.reason} Proposal: {proposal.action} {proposal.size_pct:g}%."
         payload = proposal.model_dump()
-    lines = await record(
-        runtime.context, "trader", "decision", text, payload=payload, secret=True
-    )
+    lines = await record(runtime.context, "trader", "decision", text, payload=payload)
     return {"proposal": proposal, "transcript": lines}
 
 
@@ -162,9 +156,7 @@ async def risk(state: State, runtime: Runtime[Meeting]) -> State:
     order = check_proposal(state["proposal"], state["portfolio"], state["price"])
     text = await speak(runtime.context, "risk", state, extra=code_check(order))
     payload = {"action": order.action, "qty": str(order.qty), "notes": order.notes}
-    lines = await record(
-        runtime.context, "risk", "risk", text, payload=payload, secret=True
-    )
+    lines = await record(runtime.context, "risk", "risk", text, payload=payload)
     return {"order": order, "transcript": lines}
 
 
@@ -185,7 +177,7 @@ async def pm(state: State, runtime: Runtime[Meeting]) -> State:
         "stop_price": str(final.stop_price) if final.stop_price else None,
         "notes": final.notes,
     }
-    lines = await record(m, "pm", "decision", text, payload=payload, secret=True)
+    lines = await record(m, "pm", "decision", text, payload=payload)
     return {"order": final, "transcript": lines}
 
 

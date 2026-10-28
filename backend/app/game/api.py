@@ -141,7 +141,7 @@ async def predict(
     player: Annotated[Player, Depends(require_player)],
     price: Annotated[Decimal, Depends(live_price)],
 ) -> dict:
-    """Today's one prediction at the current price; unlocks today's secret messages."""
+    """Today's one prediction at the current price."""
     day = trading_day(datetime.now(UTC))
     done = await session.scalar(
         select(Prediction.id)

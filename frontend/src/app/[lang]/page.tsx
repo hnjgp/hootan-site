@@ -3,6 +3,7 @@ import { Header } from "@/components/header/Header";
 import { SectionIcon } from "@/components/icons";
 import { Hero, SECTION_IDS } from "@/components/home/Hero";
 import { JobFit } from "@/components/home/jobfit/JobFit";
+import { Trading } from "@/components/home/trading/Trading";
 import { Twin } from "@/components/home/twin/Twin";
 import { SectionScroller } from "@/components/SectionScroller";
 import { getDictionary, hasLocale } from "@/i18n";
@@ -24,6 +25,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
               <Twin t={t.twin} />
             ) : id === "job-fit" ? (
               <JobFit t={t.jobfit} lang={lang} />
+            ) : id === "trading" ? (
+              <Trading t={t.trading} lang={lang} />
             ) : (
               <div className="flex min-h-[50vh] items-center justify-center gap-3 rounded-[22px] border-2 border-dashed border-line text-[28px] font-bold">
                 <span className="text-accent">

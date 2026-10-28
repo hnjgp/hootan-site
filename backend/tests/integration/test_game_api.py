@@ -47,23 +47,13 @@ async def join(api, nickname: str = "satoshi") -> dict:
 
 
 async def meeting(session, day, decision: str = "BUY") -> TradingSession:
-    """A finished meeting whose last event is secret."""
+    """A finished meeting with one spoken turn."""
     row = TradingSession(session_date=day, status="done", decision=decision)
     session.add(row)
     await session.flush()
     session.add(
         SessionEvent(
             session_id=row.id, seq=1, agent="data", kind="speech", text_en="Hi"
-        )
-    )
-    session.add(
-        SessionEvent(
-            session_id=row.id,
-            seq=2,
-            agent="pm",
-            kind="decision",
-            text_en="We buy",
-            is_secret=True,
         )
     )
     await session.commit()
@@ -155,39 +145,6 @@ async def test_one_prediction_a_day_at_the_live_price(api):
     assert second.status_code == 409
     me = (await api.get("/api/game/me")).json()
     assert me["today"]["direction"] == "down"
-
-
-async def test_predicting_unlocks_todays_secret_messages(api, session):
-    await meeting(session, TODAY)
-    await join(api)
-
-    before = (await api.get("/api/trading/sessions/today")).json()["session"]
-    await api.post("/api/game/predictions", json={"direction": "up", "stake_pct": 10})
-    after = (await api.get("/api/trading/sessions/today")).json()["session"]
-
-    assert before["decision"] is None
-    assert before["events"][1] == {
-        "seq": 2,
-        "agent": "pm",
-        "kind": "decision",
-        "hidden": True,
-    }
-    assert after["decision"] == "BUY"
-    assert after["events"][1]["text_en"] == "We buy"
-    history = (await api.get("/api/trading/sessions/history")).json()
-    assert history[0]["decision"] == "BUY"
-
-
-async def test_another_players_prediction_does_not_unlock(api, session):
-    await meeting(session, TODAY)
-    await join(api)
-    await api.post("/api/game/predictions", json={"direction": "up", "stake_pct": 10})
-    api.cookies.clear()
-    await join(api, "nakamoto")
-
-    body = (await api.get("/api/trading/sessions/today")).json()["session"]
-    assert body["decision"] is None
-    assert body["events"][1]["hidden"] is True
 
 
 async def add_prediction(session, player, day, direction="up", stake=10_000, **kw):

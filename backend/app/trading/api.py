@@ -1,8 +1,7 @@
 """Trading floor endpoints: start today's meeting (the worker holds it), watch it
-live or replay the last one, and list past meetings.
+live or replay the last one, list past meetings, and the team's running score.
 
-Secret messages and the decision of the current trading day never leave the
-server until the visitor's player cookie has today's prediction (CLAUDE.md 4.2).
+Every visitor sees whole meetings, decisions included.
 """
 
 from datetime import UTC, date, datetime, timedelta
@@ -12,10 +11,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Player, Prediction, SessionEvent, TradingSession
+from app.db.models import MarketPrice, SessionEvent, TradingSession
 from app.db.session import get_session
-from app.game.players import current_player
 from app.security.rate_limit import RateLimiter, limit_by_ip
+from app.trading.guard import first_session_price
+from app.trading.portfolio import INITIAL_CASH, hold_value, load_portfolio
 from app.trading.run import get_or_create, trading_day
 
 router = APIRouter(prefix="/api/trading")
@@ -44,52 +44,58 @@ async def start_today(
     }
 
 
-def event_out(event: SessionEvent, hide: bool) -> dict:
-    """An event for the page; a hidden one keeps only who spoke and when."""
-    out = {"seq": event.seq, "agent": event.agent, "kind": event.kind}
-    if hide:
-        return out | {"hidden": True}
-    return out | {
-        "hidden": False,
+def event_out(event: SessionEvent) -> dict:
+    """One spoken turn of a meeting for the page."""
+    return {
+        "seq": event.seq,
+        "agent": event.agent,
+        "kind": event.kind,
         "text_en": event.text_en,
         "text_fa": event.text_fa,
         "payload": event.payload,
     }
 
 
-async def has_predicted(
-    session: AsyncSession, player: Player | None, today: date
-) -> bool:
-    """True when the player already predicted this trading day."""
-    if player is None:
-        return False
-    found = await session.scalar(
-        select(Prediction.id)
-        .where(Prediction.player_id == player.id)
-        .where(Prediction.game_date == today)
-    )
-    return found is not None
-
-
-def session_out(row: TradingSession, today: date, unlocked: bool) -> dict:
-    """Summary of a meeting; today's decision stays secret until the visitor predicts."""
-    secret = row.session_date == today and not unlocked
+def session_out(row: TradingSession) -> dict:
+    """Summary of a meeting without its events."""
     return {
         "id": row.id,
         "session_date": row.session_date,
         "status": row.status,
         "price": row.price,
-        "decision": None if secret else row.decision,
-        "qty": None if secret else row.qty,
+        "decision": row.decision,
+        "qty": row.qty,
         "started_at": row.started_at,
         "finished_at": row.finished_at,
     }
 
 
+async def events_of(session: AsyncSession, row: TradingSession, after: int = 0) -> list:
+    """The meeting's events after seq `after`, in speaking order."""
+    rows = await session.scalars(
+        select(SessionEvent)
+        .where(SessionEvent.session_id == row.id)
+        .where(SessionEvent.seq > after)
+        .order_by(SessionEvent.seq)
+    )
+    return [event_out(e) for e in rows]
+
+
+async def last_done(
+    session: AsyncSession, before: date | None = None
+) -> TradingSession | None:
+    """The newest finished meeting, optionally before a day."""
+    query = select(TradingSession).where(TradingSession.status == "done")
+    if before is not None:
+        query = query.where(TradingSession.session_date < before)
+    return await session.scalar(
+        query.order_by(TradingSession.session_date.desc()).limit(1)
+    )
+
+
 @router.get("/sessions/today")
 async def today_session(
     session: Annotated[AsyncSession, Depends(get_session)],
-    player: Annotated[Player | None, Depends(current_player)],
     after: Annotated[int, Query(ge=0)] = 0,
 ) -> dict:
     """The meeting to show, with its events after seq `after` (for live polling).
@@ -103,40 +109,54 @@ async def today_session(
     )
     shown = own
     if own is None or own.status not in SHOWN_TODAY:
-        shown = await session.scalar(
-            select(TradingSession)
-            .where(TradingSession.status == "done")
-            .where(TradingSession.session_date < today)
-            .order_by(TradingSession.session_date.desc())
-            .limit(1)
-        )
+        shown = await last_done(session, before=today)
     body = {"trading_day": today, "today_status": own.status if own else None}
     if shown is None:
         return body | {"session": None}
-    events = await session.scalars(
-        select(SessionEvent)
-        .where(SessionEvent.session_id == shown.id)
-        .where(SessionEvent.seq > after)
-        .order_by(SessionEvent.seq)
-    )
-    unlocked = await has_predicted(session, player, today)
-    secret = shown.session_date == today and not unlocked
     return body | {
-        "session": session_out(shown, today, unlocked)
-        | {"events": [event_out(e, secret and e.is_secret) for e in events]}
+        "session": session_out(shown)
+        | {"events": await events_of(session, shown, after)}
     }
 
 
 @router.get("/sessions/history")
 async def history(
     session: Annotated[AsyncSession, Depends(get_session)],
-    player: Annotated[Player | None, Depends(current_player)],
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
 ) -> list[dict]:
     """Past and current meetings, newest first, without their events."""
-    today = trading_day(datetime.now(UTC))
     rows = await session.scalars(
         select(TradingSession).order_by(TradingSession.session_date.desc()).limit(limit)
     )
-    unlocked = await has_predicted(session, player, today)
-    return [session_out(r, today, unlocked) for r in rows]
+    return [session_out(r) for r in rows]
+
+
+@router.get("/summary")
+async def summary(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict:
+    """The team's money against buy-and-hold at the latest price, and its last meeting."""
+    today = trading_day(datetime.now(UTC))
+    price = await session.scalar(
+        select(MarketPrice.price).order_by(MarketPrice.ts.desc()).limit(1)
+    )
+    own = await session.scalar(
+        select(TradingSession).where(TradingSession.session_date == today)
+    )
+    value = held = INITIAL_CASH
+    if price is not None:
+        value = (await load_portfolio(session)).value(price)
+        first = await first_session_price(session)
+        held = hold_value(first, price) if first else INITIAL_CASH
+    last = await last_done(session)
+    return {
+        "trading_day": today,
+        "today_status": own.status if own else None,
+        "today_started_at": own.started_at if own else None,
+        "start_usd": INITIAL_CASH,
+        "value_usd": round(value, 2),
+        "hold_usd": round(held, 2),
+        "last": session_out(last) | {"events": await events_of(session, last)}
+        if last
+        else None,
+    }

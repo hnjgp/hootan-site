@@ -7,7 +7,6 @@ from decimal import Decimal
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
-    Boolean,
     Date,
     DateTime,
     ForeignKey,
@@ -113,7 +112,6 @@ class SessionEvent(Base):
     text_en: Mapped[str] = mapped_column(Text)
     text_fa: Mapped[str | None] = mapped_column(Text)
     payload: Mapped[dict | None] = mapped_column(JSONB)
-    is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = created_at_column()
 
 

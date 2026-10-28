@@ -51,7 +51,6 @@ async def test_full_meeting_records_every_speaker_and_trades_within_the_rules(
         "data", "news", "bull", "bear", "trader", "risk", "pm",
     ]  # fmt: skip
     assert [e.seq for e in recorded] == list(range(1, 8))
-    assert [e.is_secret for e in recorded] == [False] * 4 + [True] * 3
     assert recorded[0].payload == MARKET
     assert "20%" in recorded[5].payload["notes"][0]
 

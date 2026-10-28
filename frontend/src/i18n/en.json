@@ -34,12 +34,6 @@
     "k3t": "Case studies, end to end",
     "k3d": "Architecture, decisions and results for everything I've shipped.",
     "selected": "selected work",
-    "live": "Live · today +2.3%",
-    "featured": "featured · playable",
-    "tradeAlt": "Line drawing of the office building where seven AI trading agents work at the windows",
-    "tradeDesc": "Seven AI agents meet every morning. Analysts read the market, a bull and a bear debate, a risk manager enforces limits in code, and a trader places paper trades on live prices. Visitors try to out-predict them.",
-    "play": "Can you beat them? Play →",
-    "built": "How I built it",
     "case": "Case study",
     "astra": "LangGraph agent with agentic RAG on PostgreSQL + pgvector, role-based tools, guardrails and an MCP server.",
     "notes": "Turns consultation notes into structured summaries. Full SaaS with sign-in, deployed live.",
@@ -212,5 +206,51 @@
     "limit": "Save the next job ad for tomorrow. Hootan hasn't been hired yet, so tokens are on a budget.",
     "off": "The fit checker took the day off so Hootan doesn't go broke. Back tomorrow.",
     "error": "Something broke on the way. Please try again in a moment."
+  },
+  "trading": {
+    "h2": "My AI trading team",
+    "sub": "Seven AI agents work in this building. Every day they hold one meeting and paper-trade on the real Bitcoin price.",
+    "alt": "Line drawing of the office building where seven AI trading agents work at the windows",
+    "live": "Live",
+    "agents": [
+      "Data analyst",
+      "News analyst",
+      "Bull",
+      "Bear",
+      "Risk manager",
+      "Trader",
+      "Portfolio manager"
+    ],
+    "roles": [
+      "reads the price and the chart",
+      "sums up the market news",
+      "argues for buying",
+      "argues against buying",
+      "stops big risks with rules in code",
+      "proposes a trade",
+      "makes the final call"
+    ],
+    "started": "The team started with 100,000 virtual dollars and now has",
+    "hold": "Had it just bought Bitcoin and held:",
+    "ch2": "Last meeting",
+    "final": "Final decision",
+    "decisions": {
+      "BUY": "Buy",
+      "SELL": "Sell",
+      "HOLD": "Hold"
+    },
+    "running": "Today's meeting is happening right now. Watch it live.",
+    "ch3": "Your turn",
+    "you": "You get 100,000 virtual dollars too. Each day, predict whether Bitcoin will be higher or lower at 9 a.m. tomorrow, and see if you can beat the team.",
+    "play": "Can you beat them? Play →",
+    "has": "in hand.",
+    "first": "You are today's first visitor!",
+    "start": "Start today's meeting",
+    "starting": "The team is gathering…",
+    "heldAt": "Today's meeting was held at {time}. The trading day runs until 9 a.m. tomorrow.",
+    "closed": "Today's meeting was called off; the last one is replayed.",
+    "todayTitle": "Today's meeting",
+    "liveTitle": "live",
+    "error": "The meeting could not start. Please try again a bit later."
   }
 }
