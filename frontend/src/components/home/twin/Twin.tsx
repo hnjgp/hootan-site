@@ -20,7 +20,7 @@ export function Twin({ t }: { t: Dictionary["twin"] }) {
   const bubble = "rounded-[14px] px-3.5 py-2.5 text-[15px] leading-[1.6] whitespace-pre-line";
 
   return (
-    <div className="float-big grid overflow-hidden rounded-[22px] border-2 border-line bg-card shadow-[6px_6px_0_var(--line)] md:grid-cols-2">
+    <div className="float-big grid overflow-hidden rounded-[22px] snap:h-full snap:max-h-[680px] border-2 border-line bg-card shadow-[6px_6px_0_var(--line)] md:grid-cols-2">
       <div className="border-b-[1.5px] border-line md:border-e-[1.5px] md:border-b-0">
         <Portrait t={t} phase={phase} word={word} file={files.at(-1)} />
       </div>

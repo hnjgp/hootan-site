@@ -12,7 +12,7 @@ export const SECTION_IDS = ["twin", "job-fit", "trading", "projects", "how"] as 
  */
 export function Hero({ lang, t, game }: { lang: Locale; t: Dictionary["main"]; game: Dictionary["game"] }) {
   return (
-    <section className="mx-auto grid max-w-[1200px] items-center gap-8 px-4 pt-5 pb-16 sm:px-6 md:grid-cols-[1.1fr_1fr]">
+    <section className="page-section mx-auto grid max-w-[1200px] items-center gap-8 px-4 pt-5 pb-16 sm:px-6 snap:pb-5 md:grid-cols-[1.1fr_1fr]">
       <HeroScene tag={t.tag} title={t.h1} dir={dirOf(lang)} />
       <div className="flex flex-col gap-5">
         <nav className="flex flex-col gap-2">

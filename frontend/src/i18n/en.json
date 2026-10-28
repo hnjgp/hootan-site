@@ -166,5 +166,51 @@
     "limitAgain": "Today's ten messages are used up! Please come back tomorrow so Hootan doesn't go broke.",
     "off": "The twin took the day off so Hootan doesn't go broke. Back tomorrow.",
     "error": "Something broke on the way. Please try again in a moment."
+  },
+  "jobfit": {
+    "tag": "honest, not flattering",
+    "h2": "Am I a fit for your role?",
+    "sub": "Paste a job ad. You'll get a score against my real experience, including what I'm missing.",
+    "label": "Job ad",
+    "placeholder": "Paste the full job ad here: title, duties and requirements…",
+    "sample": "Use a sample ad",
+    "sampleAd": "AI Engineer - LLM & Agents\nHybrid\n\nRequirements:\n- Python, FastAPI\n- RAG and vector databases\n- Agent frameworks (LangGraph or similar)\n- 2+ years shipping software in production\n- Kubernetes is a plus",
+    "min": "At least 50 characters",
+    "check": "Check my fit",
+    "note": "Hootan sees the ad and the result so he can follow up. Nothing else is stored.",
+    "resultLabel": "Result",
+    "of": "/ 100",
+    "empty": "Your result will appear here: a score, strengths, honest gaps and questions worth asking.",
+    "result": "YOUR RESULT",
+    "strengths": "strengths",
+    "gaps": "gaps",
+    "ask": "worth asking him",
+    "follow": "Ask the twin a follow-up",
+    "email": "Email Hootan",
+    "words": [
+      [
+        "Appraising",
+        "judging the value"
+      ],
+      [
+        "Assaying",
+        "testing the gold"
+      ],
+      [
+        "Weighing",
+        "on the scales"
+      ],
+      [
+        "Tallying",
+        "adding it up"
+      ],
+      [
+        "Deliberating",
+        "reaching a verdict"
+      ]
+    ],
+    "limit": "Save the next job ad for tomorrow. Hootan hasn't been hired yet, so tokens are on a budget.",
+    "off": "The fit checker took the day off so Hootan doesn't go broke. Back tomorrow.",
+    "error": "Something broke on the way. Please try again in a moment."
   }
 }

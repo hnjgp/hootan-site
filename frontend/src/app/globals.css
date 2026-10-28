@@ -10,6 +10,7 @@
   --accent: #a8420c;
   --paper: #f3ebdd;
   --head: rgba(243, 235, 221, 0.95);
+  --head-h: 70px;
   --inv: #1e1c1a;
   --invInk: #f3ebdd;
   --green: #1f6b4e;
@@ -102,6 +103,17 @@ html[lang="fa"] h1 {
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Large screens: every section fills exactly one screen under the header; SectionScroller steps between them. */
+@custom-variant snap (@media (min-width: 768px) and (min-height: 640px));
+.page-section {
+  scroll-margin-top: var(--head-h);
+}
+@variant snap {
+  .page-section {
+    height: calc(100dvh - var(--head-h));
+  }
 }
 a {
   color: var(--accent);

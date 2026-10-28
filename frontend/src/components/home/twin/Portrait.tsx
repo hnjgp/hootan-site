@@ -11,7 +11,7 @@ export function Portrait({ t, phase, word, file }: { t: Dictionary["twin"]; phas
   const [label, meaning] = words ? words[word % words.length] : [t.listen, ""];
 
   return (
-    <div className="relative aspect-square w-full overflow-hidden bg-paper">
+    <div className="relative aspect-square w-full overflow-hidden bg-paper snap:aspect-auto snap:h-full">
       <div className="breathe absolute inset-0 origin-[50%_80%]">
         {IMAGES.map((name, k) => (
           // eslint-disable-next-line @next/next/no-img-element
