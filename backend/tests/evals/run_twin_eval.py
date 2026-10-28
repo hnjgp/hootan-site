@@ -21,7 +21,8 @@ from app.twin.prompt import HANDOFF
 HERE = Path(__file__).parent
 CASES = json.loads((HERE / "twin_cases.json").read_text("utf-8"))
 COURSE_WORDS = re.compile(
-    r"\bcourse|\bclass|exercise|دوره|کلاس|تمرین|آموزشی", re.IGNORECASE
+    r"\bcourse|\bclass(?!ifi)|exercise|دوره|کلاس(?!یفیکیشن)|تمرین|آموزشی",
+    re.IGNORECASE,
 )
 ALWAYS_FORBIDDEN = re.compile(r"claude|chatgpt|copilot|هوتان", re.IGNORECASE)
 

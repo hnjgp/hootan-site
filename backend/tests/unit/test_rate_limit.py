@@ -36,6 +36,19 @@ def test_each_key_has_its_own_count():
     assert not limiter.allow("a")
 
 
+def test_remaining_counts_down_and_refills_after_window():
+    clock = FakeClock()
+    limiter = RateLimiter(2, timedelta(minutes=10), clock)
+
+    assert limiter.remaining("a") == 2
+    limiter.allow("a")
+    limiter.allow("a")
+    assert limiter.remaining("a") == 0
+
+    clock.now = 10 * 60
+    assert limiter.remaining("a") == 2
+
+
 def test_endpoint_returns_429_over_limit():
     app = FastAPI()
     limiter = RateLimiter(2, timedelta(minutes=10), FakeClock())

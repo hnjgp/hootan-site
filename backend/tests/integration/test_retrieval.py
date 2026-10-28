@@ -26,6 +26,20 @@ async def test_search_returns_nearest_chunks_first(session, tmp_path):
     assert hits[1].distance > hits[0].distance
 
 
+async def test_exact_word_lifts_a_chunk_the_meaning_search_missed(session, tmp_path):
+    (tmp_path / "learning.md").write_text(
+        "# Skills\n## Python\n- pandas\n## Power BI\n- DAX\n## Automation\n- n8n\n",
+        encoding="utf-8",
+    )
+    client = FakeLLMClient(SETTINGS)
+    await ingest(session, client, tmp_path)
+
+    # Fake vectors give no meaning, so only the word "automation" can find the chunk.
+    hits = await search(session, client, "Any automation experience?", k=1)
+
+    assert hits[0].content == "Skills | Automation\n- n8n"
+
+
 async def test_search_can_keep_only_one_language(session, tmp_path):
     (tmp_path / "resume.md").write_text(
         "# Resume\n## Experience\n- Cafe Bazaar\n## سوابق کاری\n- کافه‌بازار\n",

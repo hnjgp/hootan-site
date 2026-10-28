@@ -19,16 +19,24 @@ class RateLimiter:
         self.clock = clock
         self.hits: dict[str, deque[float]] = defaultdict(deque)
 
+    def _current(self, key: str) -> deque[float]:
+        """The key's hits still inside the window."""
+        hits = self.hits[key]
+        while hits and hits[0] <= self.clock() - self.window:
+            hits.popleft()
+        return hits
+
     def allow(self, key: str) -> bool:
         """Record a hit and return True, or return False if the key is over the limit."""
-        now = self.clock()
-        hits = self.hits[key]
-        while hits and hits[0] <= now - self.window:
-            hits.popleft()
+        hits = self._current(key)
         if len(hits) >= self.limit:
             return False
-        hits.append(now)
+        hits.append(self.clock())
         return True
+
+    def remaining(self, key: str) -> int:
+        """How many hits the key has left in the current window."""
+        return self.limit - len(self._current(key))
 
 
 def limit_by_ip(*limiters: RateLimiter) -> Callable[[Request], None]:

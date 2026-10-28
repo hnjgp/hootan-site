@@ -21,7 +21,8 @@ from app.twin.retrieval import Hit, search
 
 router = APIRouter(prefix="/api")
 
-# Nearest chunk farther than this means the knowledge has no answer (Decision Log).
+# Nearest chunk farther than this, and no rare shared word, means the knowledge has
+# no answer (Decision Log).
 HANDOFF_DISTANCE = 0.80
 MAX_TOKENS = 400
 
@@ -36,10 +37,8 @@ FALLBACK_TEXT = {
     "en": "The AI assistant is temporarily off. Please see the resume or email {email}.",
 }
 
-CHAT_LIMITERS = (
-    RateLimiter(10, timedelta(minutes=10)),
-    RateLimiter(30, timedelta(days=1)),
-)
+CHAT_LIMITER = RateLimiter(10, timedelta(days=1))
+CHAT_LIMITERS = (CHAT_LIMITER,)
 LEAD_LIMITERS = (RateLimiter(5, timedelta(days=1)),)
 chat_limits = limit_by_ip(*CHAT_LIMITERS)
 lead_limits = limit_by_ip(*LEAD_LIMITERS)
@@ -98,7 +97,8 @@ async def answer(
     for s in sources:
         yield event("status", {"state": "thinking", "step": f"searching: {s['file']}"})
 
-    handoff = not hits or hits[0].distance > HANDOFF_DISTANCE
+    far = all(h.distance > HANDOFF_DISTANCE and not h.rare_word for h in hits)
+    handoff = not hits or far
     if not handoff:
         yield event("status", {"state": "answering"})
         messages = build_messages(question, hits, history)
@@ -145,7 +145,10 @@ async def twin_chat(
     session: SessionDep,
     client: ClientDep,
 ) -> AsyncIterator[ServerSentEvent]:
-    """Events: status, token, sources or handoff, fallback when AI is off, then done."""
+    """Events: status, token, sources or handoff, fallback when AI is off, then done.
+
+    The done event carries how many questions the visitor has left today.
+    """
     log = ChatLog(
         visitor_id=visitor_id(request, client.settings), question=body.question
     )
@@ -159,7 +162,7 @@ async def twin_chat(
         yield event("fallback", {"message": log.answer})
     session.add(log)
     await session.commit()
-    yield event("done", {})
+    yield event("done", {"left": CHAT_LIMITER.remaining(request.client.host)})
 
 
 @router.post("/leads", status_code=201, dependencies=[Depends(lead_limits)])

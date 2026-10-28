@@ -108,12 +108,15 @@ async def test_too_long_question_is_rejected(api):
     assert response.status_code == 422
 
 
-async def test_eleventh_question_in_ten_minutes_is_limited(api):
-    for _ in range(10):
-        await chat(api, "Who won the last World Cup?")
+async def test_eleventh_question_in_a_day_is_limited(api):
+    lefts = [
+        dict(await chat(api, "Who won the last World Cup?"))["done"]["left"]
+        for _ in range(10)
+    ]
 
     response = await api.post("/api/twin/chat", json={"question": "again"})
 
+    assert lefts == list(range(9, -1, -1))
     assert response.status_code == 429
 
 
