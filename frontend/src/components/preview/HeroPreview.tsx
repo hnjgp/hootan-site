@@ -26,11 +26,6 @@ const L = {
     soon: "این بخش بعد از انتخاب تو ساخته می‌شود.",
     steps: ["سؤال", "تفحّص", "تأمّل", "کتابت"],
     stepMeaning: ["رسیدن سؤال", "جست‌وجوی دقیق", "درنگ و فکر", "نوشتن جواب"],
-    states: ["گوش می‌دهم…", "تأمّل (درنگ و فکر)…", "کتابت (نوشتن)…"],
-    chat: [
-      ["با LangGraph چه ساخته‌ای؟", "Astra: یک ایجنت با جست‌وجوی هوشمند روی pgvector و سرور MCP."],
-      ["چطور می‌توانیم همکاری کنیم؟", "حضوری، دورکاری، ترکیبی یا پروژه‌ای؛ هر کدام برای شما بهتر است."],
-    ],
     agents: ["تحلیلگر داده", "تحلیلگر خبر", "گاو", "خرس", "مدیر ریسک", "تریدر", "مدیر پرتفوی"],
     phone: "تلفن",
     email: "ایمیل",
@@ -53,11 +48,6 @@ const L = {
     soon: "This section is built after you choose.",
     steps: ["Ask", "Gleaning", "Pondering", "Scribing"],
     stepMeaning: ["question arrives", "gathering bit by bit", "thinking it over", "writing by hand"],
-    states: ["Listening…", "Pondering (thinking it over)…", "Scribing (writing by hand)…"],
-    chat: [
-      ["What have you built with LangGraph?", "Astra: an agent with smart search on pgvector and an MCP server."],
-      ["How can we work together?", "On-site, remote, hybrid or project-based, whichever suits you."],
-    ],
     agents: ["Data analyst", "News analyst", "Bull", "Bear", "Risk manager", "Trader", "Portfolio manager"],
     phone: "Phone",
     email: "Email",
@@ -382,20 +372,6 @@ function RobotGame({ lang }: { lang: Locale }) {
   );
 }
 
-function DeskAnim({ t }: { t: T }) {
-  const i = useTick(2600, 3);
-  const imgs = ["me_listen", "me_think", "me_talk"];
-  return (
-    <div dir="ltr" className="relative aspect-square w-full overflow-hidden rounded-[22px] border-2 border-line bg-paper shadow-[6px_6px_0_var(--line)]">
-      {imgs.map((name, k) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={name} src={`/assets/${name}.jpg`} alt="" className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500" style={{ opacity: k === i ? 1 : 0 }} />
-      ))}
-      <span className="absolute top-4 left-4 rounded-full bg-[#1e1c1a] px-3 py-1.5 text-[14px] font-semibold text-[#f3ebdd]">{t.states[i]}</span>
-    </div>
-  );
-}
-
 function FlowAnim({ t }: { t: T }) {
   const i = useTick(1400, 4);
   return (
@@ -414,32 +390,6 @@ function FlowAnim({ t }: { t: T }) {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function TypeAnim({ t, lang }: { t: T; lang: Locale }) {
-  const [n, setN] = useState(0);
-  const [pair, setPair] = useState(0);
-  const [q, a] = t.chat[pair];
-  useEffect(() => {
-    const id = setTimeout(
-      () => {
-        if (n >= a.length + 30) {
-          setPair((p) => (p + 1) % t.chat.length);
-          setN(-12);
-        } else setN(n + 1);
-      },
-      n < 0 ? 120 : 45,
-    );
-    return () => clearTimeout(id);
-  }, [n, a.length, t.chat.length]);
-  return (
-    <div dir={lang === "fa" ? "rtl" : "ltr"} className="flex aspect-square w-full flex-col justify-end gap-3 rounded-[22px] border-2 border-line bg-card p-6 shadow-[6px_6px_0_var(--line)]">
-      <div className="max-w-[85%] self-end rounded-[14px] rounded-ee-[4px] bg-inv px-3.5 py-2.5 text-[15px] text-inv-ink">{q}</div>
-      <div className="min-h-[64px] max-w-[90%] self-start rounded-[14px] rounded-es-[4px] border-[1.5px] border-line bg-bg px-3.5 py-2.5 text-[15px] leading-[1.6]">
-        {n < 0 ? <span className="text-muted">{t.states[1]}</span> : a.slice(0, n)}
-      </div>
     </div>
   );
 }
@@ -511,10 +461,7 @@ export function HeroPreview({ lang }: { lang: Locale }) {
   const pick = (on: boolean) => `rounded-full border-[1.5px] border-line px-3 py-1.5 text-[13px] ${on ? "bg-inv text-inv-ink" : "bg-card text-ink"}`;
 
   const sectionBody = [
-    <div key="twin" className="grid w-full gap-6 md:grid-cols-2">
-      <DeskAnim t={t} />
-      <TypeAnim t={t} lang={lang} />
-    </div>,
+    null,
     null,
     <div key="trading" className="w-full max-w-[760px]">
       <OfficeAnim t={t} />

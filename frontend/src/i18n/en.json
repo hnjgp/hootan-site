@@ -76,5 +76,95 @@
       "Even Hootan's agents fail this one.",
       "Okay, fine. You're not a robot."
     ]
+  },
+  "twin": {
+    "h2": "Interview my digital twin",
+    "sub": "Answers come only from my résumé, LinkedIn and project docs.",
+    "greet": "Hi, I'm Hootan's digital twin. Ask me anything about his work.",
+    "chips": [
+      "What have you built with LangGraph?",
+      "What's your background?",
+      "How can we work together?",
+      "What salary are you expecting?"
+    ],
+    "placeholder": "Ask about my work, skills or projects…",
+    "askLabel": "Ask the twin",
+    "ask": "Ask",
+    "sources": "sources:",
+    "searching": "searching:",
+    "listen": "Listening",
+    "words": {
+      "search": [
+        [
+          "Sleuthing",
+          "detective work"
+        ],
+        [
+          "Rummaging",
+          "digging through"
+        ],
+        [
+          "Leafing through",
+          "turning pages"
+        ],
+        [
+          "Gleaning",
+          "gathering bit by bit"
+        ]
+      ],
+      "think": [
+        [
+          "Pondering",
+          "thinking it over"
+        ],
+        [
+          "Cogitating",
+          "thinking hard"
+        ],
+        [
+          "Mulling",
+          "turning it over"
+        ],
+        [
+          "Ruminating",
+          "deep chewing of thoughts"
+        ],
+        [
+          "Stargazing",
+          "reading the stars"
+        ]
+      ],
+      "talk": [
+        [
+          "Scribing",
+          "writing by hand"
+        ],
+        [
+          "Inking",
+          "putting it in ink"
+        ],
+        [
+          "Quilling",
+          "writing with a quill"
+        ],
+        [
+          "Wordsmithing",
+          "crafting words"
+        ]
+      ]
+    },
+    "alt": [
+      "Hootan listening, hands folded on the desk",
+      "Hootan thinking, hand on chin",
+      "Hootan explaining with a hand gesture"
+    ],
+    "emailLabel": "Your work email",
+    "send": "Send to Hootan",
+    "sent": "Sent! Hootan will reply personally.",
+    "badEmail": "That email doesn't look right.",
+    "limit": "That's message number ten! Please come back tomorrow so Hootan doesn't go broke.",
+    "limitAgain": "Today's ten messages are used up! Please come back tomorrow so Hootan doesn't go broke.",
+    "off": "The twin took the day off so Hootan doesn't go broke. Back tomorrow.",
+    "error": "Something broke on the way. Please try again in a moment."
   }
 }
