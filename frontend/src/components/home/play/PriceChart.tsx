@@ -10,7 +10,9 @@ const RANGES: Range[] = ["24h", "7d", "season"];
 /** New 5-minute samples arrive this often; the live price moves the line's end in between. */
 const SERIES_MS = 5 * 60_000;
 
-/** Hand-drawn BTC line for one range ending at the live price, with the AI team's buys and sells on it.
+const MARKS = { long: "bg-green", short: "bg-orange", close: "bg-card" } as const;
+
+/** Hand-drawn BTC line for one range ending at the live price, with the AI team's openings and closings on it.
  * The line is a stretched SVG; the markers are positioned in percent so they stay round. */
 export function PriceChart({
   t,
@@ -51,6 +53,7 @@ export function PriceChart({
     .map((p, k) => `${k ? "L" : "M"}${sx(times[k]).toFixed(2)},${sy(p.price).toFixed(2)}`)
     .join(" ");
   const usd = (v: number) => "$" + Math.round(v).toLocaleString(loc);
+  const label = { long: t.teamLong, short: t.teamShort, close: t.teamClose };
 
   return (
     <div className="flex min-h-[200px] flex-1 flex-col rounded-[18px] border-[1.5px] border-line bg-card p-3 snap:min-h-0">
@@ -79,7 +82,7 @@ export function PriceChart({
         </div>
       </div>
 
-      <div dir="ltr" className="relative min-h-[110px] flex-1">
+      <div dir="ltr" className="relative min-h-[110px] flex-1 snap:min-h-[50px]">
         {series && series.length > 1 ? (
           <>
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
@@ -92,9 +95,9 @@ export function PriceChart({
             <span className="absolute bottom-0 left-0 font-mono text-[11px] text-muted">{usd(lo)}</span>
             {marks.map((m) => (
               <span
-                key={m.ts}
-                title={`${m.side === "BUY" ? t.buy : t.sell} · ${usd(m.y)}`}
-                className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-line ${m.side === "BUY" ? "bg-green" : "bg-orange"}`}
+                key={m.ts + m.side}
+                title={`${label[m.side]} · ${usd(m.y)}`}
+                className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-line ${MARKS[m.side]}`}
                 style={{ left: `${Math.min(sx(m.x), 100)}%`, top: `${sy(m.y)}%` }}
               />
             ))}
@@ -106,15 +109,13 @@ export function PriceChart({
         )}
       </div>
 
-      <div className="mt-2 flex gap-4 text-[12px] text-muted">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full border-[1.5px] border-line bg-green" />
-          {t.buy}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full border-[1.5px] border-line bg-orange" />
-          {t.sell}
-        </span>
+      <div className="mt-2 flex flex-wrap gap-x-4 text-[12px] text-muted">
+        {(["long", "short", "close"] as const).map((side) => (
+          <span key={side} className="flex items-center gap-1.5">
+            <span className={`h-2.5 w-2.5 rounded-full border-[1.5px] border-line ${MARKS[side]}`} />
+            {label[side]}
+          </span>
+        ))}
       </div>
     </div>
   );

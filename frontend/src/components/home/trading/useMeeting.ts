@@ -7,7 +7,7 @@ const TURN_MS = 3200;
 const END_MS = 30_000;
 const POLL_MS = 2000;
 
-export type Decision = "BUY" | "SELL" | "HOLD";
+export type Decision = "LONG" | "SHORT" | "CLOSE" | "HOLD";
 export type Event = { seq: number; agent: string; text_en: string; text_fa: string | null };
 export type Summary = {
   today_status: string | null;

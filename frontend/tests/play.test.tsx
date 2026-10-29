@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Account } from "@/components/header/Account";
 import { summary } from "@/components/home/play/Leaderboard";
+import { maxMargin } from "@/components/home/play/Order";
 import { Play } from "@/components/home/play/Play";
 import { getDictionary } from "@/i18n";
 
@@ -17,24 +18,34 @@ const renderPlay = () =>
     </AuthProvider>,
   );
 
+const POSITION = {
+  id: 7,
+  side: "long",
+  entry_price: "80000",
+  margin_usd: "1000",
+  leverage: 10,
+  qty: "0.125",
+  tp_price: null,
+  sl_price: null,
+  liq_price: "72000",
+  fee_usd: "5",
+  opened_at: "2026-10-30T08:00:00Z",
+  closed_at: null,
+  close_price: null,
+  close_reason: null,
+  pnl_usd: "250",
+};
 const ME = {
   nickname: "satoshi",
   avatar: false,
-  balance_usd: "100000",
-  return_pct: 0,
-  hold_usd: "110000",
-  ai_return_pct: 1,
-  streak: 0,
-  today: null,
-  predictions: [],
-};
-const SUMMARY = {
-  today_status: "done",
-  today_started_at: null,
-  start_usd: "100000",
-  value_usd: "101000",
-  hold_usd: "99000",
-  last: { session_date: "2026-10-29", decision: "BUY", events: [] },
+  price: "82000",
+  cash_usd: "8995",
+  equity_usd: "10245",
+  return_pct: 2.45,
+  hold_usd: "10250",
+  ai_return_pct: 0,
+  open: [POSITION],
+  closed: [],
 };
 const ROWS = [
   { rank: 1, nickname: "dana", return_pct: 4.5, is_ai: false },
@@ -44,7 +55,6 @@ const ROWS = [
 /** A fake backend: `routes` maps a path start to [status, body]; posts are recorded. */
 function backend(routes: Record<string, [number, unknown]>) {
   const all: Record<string, [number, unknown]> = {
-    "/api/trading/summary": [200, SUMMARY],
     "/api/trading/trades": [200, []],
     "/api/game/price": [200, { price: "80000" }],
     "/api/game/leaderboard": [200, { rows: ROWS }],
@@ -59,12 +69,14 @@ function backend(routes: Record<string, [number, unknown]>) {
   return fetch;
 }
 
+const longButton = () => screen.findByRole("button", { name: new RegExp(`^▲ ${t.long}`) });
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
 
-test("the rules sit in one card, the table marks the AI team, and logged out the tiles are dashes", async () => {
+test("the rules sit in one card, the table marks the AI team, and logged out the strip is dashes", async () => {
   backend({ "/api/game/me": [401, { detail: "No player" }] });
   renderPlay();
 
@@ -72,26 +84,67 @@ test("the rules sit in one card, the table marks the AI team, and logged out the
   expect(within(rules).getAllByRole("listitem")).toHaveLength(4);
   expect(await screen.findByText(t.ai)).toBeTruthy();
   expect(screen.getByText("+4.5%")).toBeTruthy();
-  expect(screen.getAllByText("—")).toHaveLength(4);
+  expect(screen.getAllByText("—")).toHaveLength(3);
 });
 
 test("logged out, the form shows but using it asks to log in", async () => {
   backend({ "/api/game/me": [401, null] });
   renderPlay();
 
-  fireEvent.click(await screen.findByRole("button", { name: `▲ ${t.up}` }));
+  fireEvent.click(await longButton());
 
   expect(await screen.findByText(t.needLogin)).toBeTruthy();
   expect(screen.getAllByLabelText(a.password).length).toBeGreaterThan(0);
 });
 
-test("logged in, the tiles show the player's own numbers", async () => {
-  backend({ "/api/game/me": [200, ME] });
+test("logged in, the strip and the open positions show live numbers, and close sends the id", async () => {
+  const fetch = backend({
+    "/api/game/me": [200, ME],
+    "/api/game/positions/7/close": [200, { ...ME, open: [], closed: [{ ...POSITION, closed_at: "x", close_price: "82000", close_reason: "manual", pnl_usd: "240" }] }],
+  });
   renderPlay();
 
-  expect(await screen.findByText("$110,000")).toBeTruthy();
-  // Return 0% against the team's +1%: not ahead.
-  expect(screen.getByText(t.mine.no)).toBeTruthy();
+  expect(await screen.findByText("$10,245")).toBeTruthy();
+  expect(screen.getByText("+$245")).toBeTruthy();
+  expect(screen.getByText("+$250")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: t.close }));
+
+  expect(await screen.findByText(t.noPositions)).toBeTruthy();
+  expect(fetch.mock.calls.some(([url]) => url === "/api/game/positions/7/close")).toBe(true);
+});
+
+test("an order sends side, margin from the percent of cash, leverage and levels", async () => {
+  const fetch = backend({ "/api/game/me": [200, { ...ME, open: [] }], "/api/game/positions": [201, ME] });
+  renderPlay();
+
+  fireEvent.click(await screen.findByRole("button", { name: new RegExp(`^▼ ${t.short}`) }));
+  fireEvent.change(screen.getByRole("slider"), { target: { value: "20" } });
+  fireEvent.change(screen.getByLabelText(t.sl), { target: { value: "84000" } });
+  fireEvent.click(screen.getByRole("button", { name: t.open.replace("{side}", t.short) }));
+
+  await vi.waitFor(() => expect(fetch.mock.calls.some(([url]) => url === "/api/game/positions")).toBe(true));
+  const sent = fetch.mock.calls.find(([url]) => url === "/api/game/positions")!;
+  expect(JSON.parse(sent[1]!.body as string)).toEqual({
+    side: "short",
+    margin_usd: maxMargin(899.5, 20).toFixed(2),
+    leverage: 20,
+    tp_price: null,
+    sl_price: "84000",
+  });
+});
+
+test("a refused order explains why", async () => {
+  backend({ "/api/game/me": [200, ME], "/api/game/positions": [422, { detail: "tp" }] });
+  renderPlay();
+
+  fireEvent.click(await screen.findByRole("button", { name: t.open.replace("{side}", t.long) }));
+
+  expect((await screen.findByRole("alert")).textContent).toBe(t.errors.tp);
+});
+
+test("the margin for a share of cash leaves room for the fee", () => {
+  expect(maxMargin(10_000, 10)).toBe(9950.24);
+  expect(maxMargin(1_000, 1)).toBe(999.5);
 });
 
 test("the summary shows the top five, the AI team and the player, with gaps", () => {
@@ -111,7 +164,7 @@ test("sign-up asks for an email and an optional phone, and a taken name says so"
   backend({ "/api/game/me": [401, null], "/api/game/players": [409, { detail: "Nickname taken" }] });
   renderPlay();
 
-  fireEvent.click(await screen.findByRole("button", { name: `▲ ${t.up}` }));
+  fireEvent.click(await longButton());
   expect(screen.queryByLabelText(a.email)).toBeNull();
   fireEvent.click(within(screen.getByText(t.needLogin).closest("form")!).getByRole("button", { name: a.signup }));
   fireEvent.change(screen.getByLabelText(a.nickname), { target: { value: "satoshi" } });
@@ -123,43 +176,21 @@ test("sign-up asks for an email and an optional phone, and a taken name says so"
   expect(await screen.findByText(a.errTaken)).toBeTruthy();
 });
 
-test("a wrong password says so, the right one shows the wallet and the header account", async () => {
+test("a wrong password says so, the right one shows the account and the header menu", async () => {
   const fetch = backend({ "/api/game/me": [401, null], "/api/game/login": [401, null] });
   renderPlay();
-  fireEvent.click(await screen.findByRole("button", { name: `▲ ${t.up}` }));
+  fireEvent.click(await longButton());
   fireEvent.change(screen.getByLabelText(a.nickname), { target: { value: "satoshi" } });
   fireEvent.change(screen.getByLabelText(a.password), { target: { value: "nope" } });
   fireEvent.submit(screen.getByLabelText(a.password).closest("form")!);
   expect(await screen.findByText(a.errLogin)).toBeTruthy();
 
   fetch.mockImplementation(async (url) =>
-    new Response(JSON.stringify(url === "/api/game/login" ? ME : { rows: [], points: [] }), { status: 200 }),
+    new Response(JSON.stringify(url === "/api/game/login" || url === "/api/game/me" ? ME : { rows: [], points: [] }), { status: 200 }),
   );
   fireEvent.submit(screen.getByLabelText(a.password).closest("form")!);
 
-  expect(await screen.findByText(t.mine.balance)).toBeTruthy();
+  expect(await screen.findByText("$10,245")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: a.account }));
   expect(screen.getByText(a.logout)).toBeTruthy();
-});
-
-test("a prediction is sent with direction and stake, then shown as today's", async () => {
-  const fetch = backend({
-    "/api/game/me": [200, ME],
-    "/api/game/predictions": [
-      201,
-      { game_date: "2026-10-29", direction: "down", stake_pct: 50, stake_usd: "50000", ref_price: "80000", result: null, pnl_usd: null },
-    ],
-  });
-  renderPlay();
-
-  // The team bought today, so "lower" earns the double bonus.
-  expect(await screen.findByText(t.bonus.replace("{dir}", t.down))).toBeTruthy();
-  const submit = screen.getByText(t.submit).closest("button")!;
-  expect(submit.disabled).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: `▼ ${t.down}` }));
-  fireEvent.click(submit);
-
-  expect(await screen.findByText(t.today)).toBeTruthy();
-  const sent = fetch.mock.calls.find(([url]) => url === "/api/game/predictions")!;
-  expect(JSON.parse(sent[1]!.body as string)).toEqual({ direction: "down", stake_pct: 50 });
 });

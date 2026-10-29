@@ -1,30 +1,29 @@
 "use client";
 
 import type { Dictionary, Locale } from "@/i18n";
+import { signedUsd } from "@/lib/digits";
 import { Leaderboard } from "./Leaderboard";
-import { Move } from "./Move";
+import { Order } from "./Order";
+import { Positions } from "./Positions";
 import { PriceChart } from "./PriceChart";
 import { useGame } from "./useGame";
 
 /**
- * The prediction game against the AI trading team on one screen: the rules in one card,
- * the visitor's move, their own numbers with the live price chart, and the leaderboard.
+ * The demo exchange against the AI trading team on one screen: the rules in one card, the
+ * order form, the visitor's equity strip with the live chart and their positions, and the
+ * leaderboard. Numbers refresh every 5 seconds.
  */
 export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionary["auth"]; lang: Locale }) {
   const game = useGame();
   const me = game.me;
   const loc = lang === "fa" ? "fa-IR-u-nu-latn" : "en-US";
-  const pct = (n: number) =>
-    new Intl.NumberFormat(loc, { signDisplay: "always", maximumFractionDigits: 2 }).format(n) + "%";
   const usd = (v: string) => "$" + Number(v).toLocaleString(loc, { maximumFractionDigits: 0 });
-  const tone = (good: boolean) => (good ? "text-green" : "text-accent");
-  const ahead = me && me.ai_return_pct !== null ? me.return_pct > me.ai_return_pct : null;
+  const pnl = me ? Number(me.equity_usd) - 10_000 : 0;
   // The visitor's own numbers; a dash until they log in.
-  const tiles: [string, string | null, string][] = [
-    [t.mine.return, me ? pct(me.return_pct) : null, me ? tone(me.return_pct >= 0) : ""],
-    [t.mine.balance, me ? usd(me.balance_usd) : null, ""],
-    [t.mine.hold, me?.hold_usd ? usd(me.hold_usd) : null, me?.hold_usd ? tone(Number(me.hold_usd) >= 100_000) : ""],
-    [t.mine.ahead, ahead === null ? null : ahead ? t.mine.yes : t.mine.no, ahead === null ? "" : tone(ahead)],
+  const strip: [string, string | null, string][] = [
+    [t.equity, me ? usd(me.equity_usd) : null, ""],
+    [t.pnl, me ? signedUsd(pnl, loc, 0) : null, pnl < 0 ? "text-accent" : "text-green"],
+    [t.cash, me ? usd(me.cash_usd) : null, ""],
   ];
 
   return (
@@ -56,21 +55,22 @@ export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionar
               <span dir="auto" className="ms-2 rounded-full bg-soft px-2.5 py-0.5 text-[13px] font-semibold">{game.me.nickname}</span>
             )}
           </h3>
-          <Move t={t} auth={auth} loc={loc} {...game} />
+          <Order t={t} auth={auth} loc={loc} me={me} price={game.price} busy={game.busy} failure={game.failure} open={game.open} />
         </div>
 
-        <div className="flex min-h-0 flex-col gap-3">
-          <div className="grid grid-cols-2 gap-2">
-            {tiles.map(([label, value, color]) => (
-              <div key={label} className="rounded-[14px] border-[1.5px] border-line bg-card px-3 py-1.5">
+        <div className="flex min-h-0 flex-col gap-2.5">
+          <div className="grid grid-cols-3 gap-2">
+            {strip.map(([label, value, color]) => (
+              <div key={label} className="min-w-0 rounded-[14px] border-[1.5px] border-line bg-card px-3 py-1">
                 <div className="truncate text-[12px] text-muted">{label}</div>
-                <div dir="ltr" className={`text-[17px] font-bold rtl:text-right ${value ? color : "text-muted"} ${label === t.mine.ahead ? "" : "font-mono"}`}>
+                <div dir="ltr" className={`truncate font-mono text-[16px] font-bold rtl:text-right ${value ? color : "text-muted"}`}>
                   {value ?? "—"}
                 </div>
               </div>
             ))}
           </div>
           <PriceChart t={t} trades={game.trades} live={game.live} loc={loc} />
+          {me && <Positions t={t} loc={loc} open={me.open} closed={me.closed} busy={game.busy} close={game.close} />}
         </div>
 
         <Leaderboard

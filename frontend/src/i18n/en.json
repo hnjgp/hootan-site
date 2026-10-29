@@ -23,7 +23,7 @@
       "Ask my twin anything about my work.",
       "Paste your job ad; get an honest score with strengths and gaps.",
       "Seven agents meet every day. See if you can beat them.",
-      "Predict Bitcoin for 9 a.m. tomorrow and climb the leaderboard.",
+      "Trade Bitcoin long or short with leverage and climb the leaderboard.",
       "Things I've built, from idea to production.",
       "Architecture, decisions and the monthly bill of this very site."
     ]
@@ -193,10 +193,10 @@
     "roles": [
       "reads the price and the chart",
       "sums up the market news",
-      "argues for buying",
-      "argues against buying",
+      "argues that Bitcoin will rise",
+      "argues that Bitcoin will fall",
       "stops big risks with rules in code",
-      "proposes a trade",
+      "proposes a plan",
       "makes the final call"
     ],
     "started": "The team started with {start} virtual dollars and now has",
@@ -204,13 +204,14 @@
     "ch2": "Last meeting",
     "final": "Final decision",
     "decisions": {
-      "BUY": "Buy",
-      "SELL": "Sell",
-      "HOLD": "Hold"
+      "LONG": "Long",
+      "SHORT": "Short",
+      "CLOSE": "Closed positions",
+      "HOLD": "No change"
     },
     "running": "Today's meeting is happening right now. Watch it live.",
     "ch3": "Your turn",
-    "you": "You get 100,000 virtual dollars too. Each day, predict whether Bitcoin will be higher or lower at 9 a.m. tomorrow, and see if you can beat the team.",
+    "you": "You get 10,000 virtual dollars too. Open long or short positions on the live price, with leverage, and see if you can beat the team.",
     "play": "Can you beat them? Play →",
     "has": "in hand.",
     "first": "You are today's first visitor!",
@@ -225,39 +226,52 @@
   "play": {
     "tag": "the game",
     "h2": "Can you beat my AI team?",
-    "sub": "A daily Bitcoin prediction game with virtual money. Everyone, the AI team included, shares one leaderboard ranked by percentage return.",
+    "sub": "A demo Bitcoin exchange with virtual money and the live price. Everyone, the AI team included, shares one leaderboard ranked by percentage return.",
     "rulesTitle": "How it works",
     "rules": [
-      "Sign up and get 100,000 virtual dollars.",
-      "Each day, say whether Bitcoin will be higher or lower at 9 a.m. tomorrow.",
-      "Stake 10% to 100% of your balance; a move under 0.2% is a draw.",
-      "If you are right and the AI team is wrong, that day's profit doubles."
+      "Sign up and get 10,000 virtual dollars. The AI team starts with the same.",
+      "Open a long (you profit if Bitcoin rises) or a short (you profit if it falls), with 1x to 100x leverage.",
+      "Add a take profit and a stop loss if you like. If the loss eats the whole margin, the position is liquidated.",
+      "Opening and closing each cost 0.05% of the position size. The team uses at most 5x."
     ],
     "yourMove": "Your move",
     "errPrice": "The live price is unavailable right now. Try again in a few minutes.",
-    "streak": "Wins in a row",
-    "teamToday": "Team today",
-    "teamNone": "No meeting yet, so no double bonus today.",
-    "teamHold": "No double bonus today.",
-    "bonus": "Say \"{dir}\" and be right: double profit.",
-    "decisions": {
-      "BUY": "Buy",
-      "SELL": "Sell",
-      "HOLD": "Hold"
+    "long": "Long",
+    "short": "Short",
+    "longHint": "profit if it rises",
+    "shortHint": "profit if it falls",
+    "amount": "Margin",
+    "ofCash": "of free cash",
+    "leverage": "Leverage",
+    "tp": "Take profit (optional)",
+    "sl": "Stop loss (optional)",
+    "size": "Size",
+    "fee": "Fee",
+    "liq": "Liquidation",
+    "open": "Open {side}",
+    "errors": {
+      "429": "Too many orders from this network today.",
+      "cash": "Not enough free cash for this margin and its fee.",
+      "margin": "The margin must be at least $1.",
+      "tp": "Take profit must be above the price for a long and below it for a short.",
+      "sl": "Stop loss must sit between the price and the liquidation price.",
+      "open": "You can have at most 20 open positions."
     },
-    "question": "At 9 a.m. tomorrow, Bitcoin vs now:",
-    "up": "Higher",
-    "down": "Lower",
-    "stake": "Your stake",
-    "submit": "Place prediction",
-    "today": "Your prediction today",
-    "todayLine": "\"{dir}\" with {stake} from {price}",
-    "resultAt": "The result comes in at 9 a.m. tomorrow.",
-    "last": "Last result",
-    "results": {
-      "win": "Win",
-      "lose": "Loss",
-      "draw": "Draw"
+    "equity": "Equity",
+    "pnl": "Total P&L",
+    "cash": "Free cash",
+    "positions": "Open positions",
+    "history": "Closed",
+    "noPositions": "No open positions yet.",
+    "noHistory": "Nothing closed yet.",
+    "entryAt": "entry",
+    "close": "Close",
+    "reasons": {
+      "manual": "closed",
+      "tp": "take profit",
+      "sl": "stop loss",
+      "liq": "liquidated",
+      "team": "closed"
     },
     "chartTitle": "Bitcoin price",
     "ranges": {
@@ -265,24 +279,17 @@
       "7d": "7 days",
       "season": "This month"
     },
-    "buy": "Team buy",
-    "sell": "Team sell",
+    "teamLong": "Team long",
+    "teamShort": "Team short",
+    "teamClose": "Team close",
     "noData": "No data yet.",
     "boardTitle": "Leaderboard",
     "month": "This month",
     "all": "All time",
     "ai": "AI Trading Team",
     "you": "you",
-    "entry": "Your first prediction puts you on the table.",
-    "needLogin": "You need to log in to predict.",
-    "mine": {
-      "return": "Your return",
-      "balance": "Your balance",
-      "hold": "If you had just held",
-      "ahead": "Ahead of the AI team?",
-      "yes": "Yes",
-      "no": "No"
-    },
+    "entry": "Your first position puts you on the table.",
+    "needLogin": "Log in to trade.",
     "notRanked": "Not on the table yet"
   },
   "projects": {
@@ -925,7 +932,7 @@
           },
           {
             "h": "The AI trading floor",
-            "p": "Seven agents meet once per trading day in a fixed order as a LangGraph graph. Prices and indicators are calculated in Python, never by the model. The risk rules live in code, not in the prompt: at most 20% of the portfolio in Bitcoin, one trade a day, a stop loss between 1% and 5%, and HOLD whenever the model's output is invalid. A meeting runs only when the first visitor of the day clicks start, so days without visitors cost nothing. Each line is saved and translated to Persian the moment it is spoken, so the first visitor watches live and everyone else sees the replay.",
+            "p": "Seven agents meet once per trading day in a fixed order as a LangGraph graph. Prices and indicators are calculated in Python, never by the model. The team trades on the same demo exchange as visitors: it keeps or closes each open position and opens at most one new long or short. The risk rules live in code, not in the prompt: leverage of at most 5x, at most 20% of equity as new margin, a stop loss between 1% and 5%, and no change whenever the model's output is invalid. Take profit, stop loss and liquidation are checked by code every 5 seconds. A meeting runs only when the first visitor of the day clicks start, so days without visitors cost nothing. Each line is saved and translated to Persian the moment it is spoken, so the first visitor watches live and everyone else sees the replay.",
             "dia": "team"
           },
           {
@@ -1024,11 +1031,11 @@
           "team": "One trading meeting",
           "rules": [
             "Risk rules in code",
-            "20% cap · stop loss 1–5%"
+            "5x cap · stop loss 1–5%"
           ],
           "book": [
-            "Virtual portfolio",
-            "starts at $100,000"
+            "Demo exchange",
+            "starts at $10,000"
           ],
           "cost": "AI cost of this site per month",
           "rows": [

@@ -2,26 +2,37 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type Prediction = {
-  game_date: string;
-  direction: "up" | "down";
-  stake_pct: number;
-  stake_usd: string;
-  ref_price: string;
-  result: "win" | "lose" | "draw" | null;
-  pnl_usd: string | null;
+export type Position = {
+  id: number;
+  side: "long" | "short";
+  entry_price: string;
+  margin_usd: string;
+  leverage: number;
+  qty: string;
+  tp_price: string | null;
+  sl_price: string | null;
+  liq_price: string;
+  fee_usd: string;
+  opened_at: string;
+  closed_at: string | null;
+  close_price: string | null;
+  close_reason: "manual" | "tp" | "sl" | "liq" | "team" | null;
+  /** Floating P&L before fees while open; the net result, fees included, once closed. */
+  pnl_usd: string;
 };
 export type Me = {
   nickname: string;
   avatar: boolean;
-  balance_usd: string;
+  /** The BTC price the numbers below were valued at. */
+  price: string;
+  cash_usd: string;
+  equity_usd: string;
   return_pct: number;
-  /** What 100,000 USD in BTC bought at sign-up is worth now; null for old accounts. */
+  /** What 10,000 USD in BTC bought at sign-up is worth now; null for old accounts. */
   hold_usd: string | null;
-  ai_return_pct: number | null;
-  streak: number;
-  today: Prediction | null;
-  predictions: Prediction[];
+  ai_return_pct: number;
+  open: Position[];
+  closed: Position[];
 };
 export type LogIn = { nickname: string; password: string; remember: boolean };
 export type SignUp = LogIn & { email: string; phone: string | null };
