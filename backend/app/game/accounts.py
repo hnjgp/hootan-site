@@ -1,22 +1,21 @@
 """Player accounts: sign up, log in, log out and a profile photo.
 
-Any nickname that passes the public-name rules and is not taken; any password.
-The signed cookie remembers who is logged in.
+Any nickname that is not taken (1 to 20 characters, the column size), any password,
+a required email and an optional phone. The signed cookie says who is logged in.
 """
 
 from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.db.models import Player
+from app.db.models import MarketPrice, Player
 from app.db.session import get_session
 from app.game.api import check_limit, me_out
-from app.game.nickname import nickname_error
 from app.game.players import require_player
 from app.security.cookie import COOKIE_NAME, set_player_cookie
 from app.security.rate_limit import RateLimiter
@@ -31,19 +30,21 @@ LOGIN_LIMITER = RateLimiter(20, timedelta(hours=1))
 AVATAR_MAX = 100_000
 JPEG = b"\xff\xd8\xff"
 
+Nickname = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20)
+]
 Password = Annotated[str, Field(min_length=1, max_length=128)]
 
 
-class SignUp(BaseModel):
-    nickname: str
-    password: Password
-    email: EmailStr | None = None
-    phone: Annotated[str, Field(pattern=r"^\+?[\d\s-]{5,20}$")] | None = None
-
-
 class LogIn(BaseModel):
-    nickname: str
+    nickname: Nickname
     password: Password
+    remember: bool = False
+
+
+class SignUp(LogIn):
+    email: EmailStr
+    phone: Annotated[str, Field(pattern=r"^\+?[\d\s-]{5,20}$")] | None = None
 
 
 async def by_nickname(session: AsyncSession, nickname: str) -> Player | None:
@@ -61,8 +62,6 @@ async def sign_up(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> dict:
     """Create an account with a 100,000 USD wallet and log it in."""
-    if error := nickname_error(body.nickname):
-        raise HTTPException(status_code=422, detail=error)
     if await by_nickname(session, body.nickname):
         raise HTTPException(status_code=409, detail="Nickname taken")
     check_limit(SIGNUP_LIMITER, request)
@@ -72,11 +71,14 @@ async def sign_up(
         password=body.password,
         email=body.email,
         phone=body.phone,
+        signup_price=await session.scalar(
+            select(MarketPrice.price).order_by(MarketPrice.ts.desc()).limit(1)
+        ),
         created_ip_hash=visitor_id(request, settings),
     )
     session.add(player)
     await session.commit()
-    set_player_cookie(response, player.id, settings)
+    set_player_cookie(response, player.id, settings, body.remember)
     return await me_out(session, player)
 
 
@@ -87,12 +89,15 @@ async def log_in(
     response: Response,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> dict:
-    """Log in with nickname and password; 401 when either is wrong."""
+    """Log in with nickname and password; 401 when either is wrong.
+
+    Remembered for a year when `remember` is set, else until the browser closes.
+    """
     check_limit(LOGIN_LIMITER, request)
     player = await by_nickname(session, body.nickname)
     if player is None or player.password != body.password:
         raise HTTPException(status_code=401, detail="Wrong nickname or password")
-    set_player_cookie(response, player.id, get_settings())
+    set_player_cookie(response, player.id, get_settings(), body.remember)
     return await me_out(session, player)
 
 

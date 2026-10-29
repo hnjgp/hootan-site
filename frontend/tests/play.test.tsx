@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, expect, test, vi } from "vitest";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Account } from "@/components/header/Account";
+import { summary } from "@/components/home/play/Leaderboard";
 import { Play } from "@/components/home/play/Play";
 import { getDictionary } from "@/i18n";
 
@@ -20,6 +21,9 @@ const ME = {
   nickname: "satoshi",
   avatar: false,
   balance_usd: "100000",
+  return_pct: 0,
+  hold_usd: "110000",
+  ai_return_pct: 1,
   streak: 0,
   today: null,
   predictions: [],
@@ -41,7 +45,7 @@ const ROWS = [
 function backend(routes: Record<string, [number, unknown]>) {
   const all: Record<string, [number, unknown]> = {
     "/api/trading/summary": [200, SUMMARY],
-    "/api/game/stats": [200, { accuracy_pct: 60, ahead_pct: null, trades: [] }],
+    "/api/trading/trades": [200, []],
     "/api/game/price": [200, { price: "80000" }],
     "/api/game/leaderboard": [200, { rows: ROWS }],
     "/api/market/btc": [200, { points: [] }],
@@ -60,7 +64,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("the rules sit in one card and the table marks the AI team", async () => {
+test("the rules sit in one card, the table marks the AI team, and logged out the tiles are dashes", async () => {
   backend({ "/api/game/me": [401, { detail: "No player" }] });
   renderPlay();
 
@@ -68,20 +72,52 @@ test("the rules sit in one card and the table marks the AI team", async () => {
   expect(within(rules).getAllByRole("listitem")).toHaveLength(4);
   expect(await screen.findByText(t.ai)).toBeTruthy();
   expect(screen.getByText("+4.5%")).toBeTruthy();
-  expect(screen.getByText("60%")).toBeTruthy();
-  expect(screen.getByText(t.stats.none)).toBeTruthy();
+  expect(screen.getAllByText("—")).toHaveLength(4);
 });
 
-test("logged out, the box asks to log in and offers sign-up with optional email and phone", async () => {
+test("logged out, the form shows but using it asks to log in", async () => {
+  backend({ "/api/game/me": [401, null] });
+  renderPlay();
+
+  fireEvent.click(await screen.findByRole("button", { name: `▲ ${t.up}` }));
+
+  expect(await screen.findByText(t.needLogin)).toBeTruthy();
+  expect(screen.getAllByLabelText(a.password).length).toBeGreaterThan(0);
+});
+
+test("logged in, the tiles show the player's own numbers", async () => {
+  backend({ "/api/game/me": [200, ME] });
+  renderPlay();
+
+  expect(await screen.findByText("$110,000")).toBeTruthy();
+  // Return 0% against the team's +1%: not ahead.
+  expect(screen.getByText(t.mine.no)).toBeTruthy();
+});
+
+test("the summary shows the top five, the AI team and the player, with gaps", () => {
+  const rows = Array.from({ length: 70 }, (_, k) => ({
+    rank: k + 1,
+    nickname: k === 29 ? "AI Trading Team" : `p${k + 1}`,
+    return_pct: 70 - k,
+    is_ai: k === 29,
+  }));
+
+  const ranks = summary(rows, "p70").map((r) => r?.rank ?? null);
+
+  expect(ranks).toEqual([1, 2, 3, 4, 5, null, 30, null, 70]);
+});
+
+test("sign-up asks for an email and an optional phone, and a taken name says so", async () => {
   backend({ "/api/game/me": [401, null], "/api/game/players": [409, { detail: "Nickname taken" }] });
   renderPlay();
 
-  expect(await screen.findByText(a.loginTitle)).toBeTruthy();
+  fireEvent.click(await screen.findByRole("button", { name: `▲ ${t.up}` }));
   expect(screen.queryByLabelText(a.email)).toBeNull();
-  fireEvent.click(within(screen.getByText(a.loginTitle).closest("form")!).getByRole("button", { name: a.signup }));
+  fireEvent.click(within(screen.getByText(t.needLogin).closest("form")!).getByRole("button", { name: a.signup }));
   fireEvent.change(screen.getByLabelText(a.nickname), { target: { value: "satoshi" } });
   fireEvent.change(screen.getByLabelText(a.password), { target: { value: "pw" } });
-  expect(screen.getByLabelText(a.email)).toBeTruthy();
+  expect((screen.getByLabelText(a.email) as HTMLInputElement).required).toBe(true);
+  expect((screen.getByLabelText(a.phone) as HTMLInputElement).required).toBe(false);
   fireEvent.submit(screen.getByLabelText(a.password).closest("form")!);
 
   expect(await screen.findByText(a.errTaken)).toBeTruthy();
@@ -90,7 +126,8 @@ test("logged out, the box asks to log in and offers sign-up with optional email 
 test("a wrong password says so, the right one shows the wallet and the header account", async () => {
   const fetch = backend({ "/api/game/me": [401, null], "/api/game/login": [401, null] });
   renderPlay();
-  fireEvent.change(await screen.findByLabelText(a.nickname), { target: { value: "satoshi" } });
+  fireEvent.click(await screen.findByRole("button", { name: `▲ ${t.up}` }));
+  fireEvent.change(screen.getByLabelText(a.nickname), { target: { value: "satoshi" } });
   fireEvent.change(screen.getByLabelText(a.password), { target: { value: "nope" } });
   fireEvent.submit(screen.getByLabelText(a.password).closest("form")!);
   expect(await screen.findByText(a.errLogin)).toBeTruthy();
@@ -100,7 +137,7 @@ test("a wrong password says so, the right one shows the wallet and the header ac
   );
   fireEvent.submit(screen.getByLabelText(a.password).closest("form")!);
 
-  expect(await screen.findByText(t.wallet)).toBeTruthy();
+  expect(await screen.findByText(t.mine.balance)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: a.account }));
   expect(screen.getByText(a.logout)).toBeTruthy();
 });

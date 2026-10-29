@@ -1,5 +1,6 @@
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 
 import httpx2
 import pytest
@@ -15,11 +16,11 @@ from app.db.models import (
     TradingSession,
 )
 from app.db.session import get_session
+from app.game import api as game_api
 from app.game.accounts import JPEG, LOGIN_LIMITER, SIGNUP_LIMITER
 from app.game.api import PREDICTION_LIMITER, live_price
 from app.game.season import season_day
 from app.game.settle import settle_predictions
-from app.llm.budget import TEHRAN
 from app.main import app
 from app.security.cookie import sign
 from app.trading.run import trading_day
@@ -44,7 +45,7 @@ async def api(session):
 
 
 async def join(api, nickname: str = "satoshi", **extra) -> dict:
-    body = {"nickname": nickname, "password": "pw"} | extra
+    body = {"nickname": nickname, "password": "pw", "email": "a@b.com"} | extra
     response = await api.post("/api/game/players", json=body)
     assert response.status_code == 201
     return response.json()
@@ -81,10 +82,18 @@ async def test_signing_up_stores_the_account_and_logs_in(api, session):
 
 
 @pytest.mark.parametrize(
-    "extra", [{"email": "not-an-email"}, {"phone": "call me"}, {"password": ""}]
+    "extra",
+    [
+        {"email": "not-an-email"},
+        {"email": None},
+        {"phone": "call me"},
+        {"password": ""},
+        {"nickname": " "},
+        {"nickname": "x" * 21},
+    ],
 )
-async def test_bad_email_phone_or_empty_password_is_rejected(api, extra):
-    body = {"nickname": "satoshi", "password": "pw"} | extra
+async def test_bad_email_phone_password_or_nickname_length_is_rejected(api, extra):
+    body = {"nickname": "satoshi", "password": "pw", "email": "a@b.com"} | extra
     response = await api.post("/api/game/players", json=body)
     assert response.status_code == 422
 
@@ -135,29 +144,60 @@ async def test_nickname_is_unique_ignoring_case(api):
     await join(api)
     api.cookies.clear()
     response = await api.post(
-        "/api/game/players", json={"nickname": "SATOSHI", "password": "pw"}
+        "/api/game/players",
+        json={"nickname": "SATOSHI", "password": "pw", "email": "c@d.com"},
     )
     assert response.status_code == 409
     assert response.json()["detail"] == "Nickname taken"
 
 
-async def test_bad_nickname_is_rejected(api):
-    response = await api.post(
-        "/api/game/players", json={"nickname": "admin_1", "password": "pw"}
+@pytest.mark.parametrize("name", ["admin 1 !", "هوتن", "<b>"])
+async def test_any_nickname_that_is_not_taken_is_fine(api, name):
+    assert (await join(api, name))["nickname"] == name
+
+
+async def test_login_is_remembered_for_a_year_only_when_asked(api):
+    await join(api)
+    body = {"nickname": "satoshi", "password": "pw"}
+    short = await api.post("/api/game/login", json=body)
+    long = await api.post("/api/game/login", json=body | {"remember": True})
+    assert "max-age" not in short.headers["set-cookie"].lower()
+    assert "max-age=31536000" in long.headers["set-cookie"].lower()
+
+
+async def test_me_compares_the_wallet_with_holding_and_the_ai_team(api, session):
+    session.add(MarketPrice(ts=NOW, symbol="BTCUSDT", price=PRICE, source="test"))
+    await session.commit()
+    await join(api)
+    session.add(
+        MarketPrice(
+            ts=NOW + timedelta(minutes=5), symbol="BTCUSDT", price=88_000, source="test"
+        )
     )
-    assert response.status_code == 422
+    await session.commit()
+
+    me = (await api.get("/api/game/me")).json()
+
+    assert me["return_pct"] == 0.0
+    # Signed up at 80,000; BTC is now 88,000: holding would have made 10%.
+    assert Decimal(me["hold_usd"]) == 110_000
+    assert me["ai_return_pct"] == 0.0
 
 
 async def test_three_nicknames_per_ip_a_day_and_failures_do_not_count(api):
     await join(api)
     api.cookies.clear()
-    await api.post("/api/game/players", json={"nickname": "satoshi", "password": "pw"})
+    await api.post(
+        "/api/game/players",
+        json={"nickname": "satoshi", "password": "pw", "email": "a@b.com"},
+    )
     for name in ("second", "third"):
         api.cookies.clear()
         await join(api, name)
     api.cookies.clear()
     response = await api.post(
-        "/api/game/players", json={"nickname": "fourth", "password": "pw"}
+        "/api/game/players",
+        json={"nickname": "fourth", "password": "pw", "email": "a@b.com"},
     )
     assert response.status_code == 429
 
@@ -308,23 +348,27 @@ async def test_leaderboard_ranks_by_return_with_the_ai_team(api, session):
     month = (await api.get("/api/game/leaderboard")).json()
     ever = (await api.get("/api/game/leaderboard", params={"period": "all"})).json()
 
-    assert [r["nickname"] for r in ever["rows"]] == ["dana", "AI Trading Team", "erin"]
-    assert [r["return_pct"] for r in ever["rows"]] == [10.0, 0.0, -5.0]
-    assert [r["rank"] for r in ever["rows"]] == [1, 2, 3]
-    assert ever["rows"][1]["is_ai"] is True
+    # One prediction is enough to be ranked (frank has two).
+    names = ["frank", "dana", "AI Trading Team", "erin"]
+    assert [r["nickname"] for r in ever["rows"]] == names
+    assert [r["return_pct"] for r in ever["rows"]] == [100.0, 10.0, 0.0, -5.0]
+    assert [r["rank"] for r in ever["rows"]] == [1, 2, 3, 4]
+    assert ever["rows"][2]["is_ai"] is True
     assert month["period"] == "month"
-    assert month["rows"][0] == {
-        "rank": 1,
+    # frank: 50,000 of it this month on 150,000 -> +33.33%.
+    assert month["rows"][0]["return_pct"] == 33.33
+    assert month["rows"][1] == {
+        "rank": 2,
         "nickname": "dana",
         "return_pct": 0.92,
         "predictions": 3,
         "is_ai": False,
     }
-    assert month["rows"][2]["return_pct"] == -5.0
+    assert month["rows"][3]["return_pct"] == -5.0
 
 
 async def test_full_game_day(api, session):
-    """Join, predict, settle the next morning, and climb the table after 3 days."""
+    """Join, predict, settle the next morning, and top the table."""
     await meeting(session, TODAY, decision="BUY")
     session.add(MarketPrice(ts=NOW, symbol="BTCUSDT", price=PRICE, source="test"))
     await join(api)
@@ -354,48 +398,29 @@ async def test_price_is_the_live_reference_price(api):
     assert Decimal(response.json()["price"]) == PRICE
 
 
-async def test_stats_judge_the_team_like_a_prediction(api, session):
-    """BUY then a rise is right, SELL then a rise is wrong; HOLD and open days do not count."""
-    start = season_day(NOW)
-    for k, decision in enumerate(["BUY", "SELL", "HOLD", "BUY"]):
-        session.add(
-            TradingSession(
-                session_date=start + timedelta(days=k),
-                status="done",
-                decision=decision,
-                price=PRICE,
-            )
-        )
-    for k in (1, 2):
-        nine = datetime.combine(start + timedelta(days=k), time(9), TEHRAN)
-        session.add(MarketPrice(ts=nine, symbol="BTCUSDT", price=81_000, source="test"))
+async def test_trades_for_the_chart(api, session):
     session.add(
         PortfolioTrade(side="BUY", qty=Decimal("0.1"), price=PRICE, reason="test")
     )
-    await ranked_player(session, "dana", 110_000, [1_000, 4_000, 5_000], start)
-    await ranked_player(session, "erin", 95_000, [-5_000, 0, 0], start)
     await session.commit()
 
-    stats = (await api.get("/api/game/stats")).json()
+    trades = (await api.get("/api/trading/trades")).json()
 
-    assert stats["accuracy_pct"] == 50
-    assert stats["decided"] == 2
-    assert stats["players"] == 2
-    assert stats["ahead_pct"] == 50
-    assert [(t["side"], Decimal(t["price"])) for t in stats["trades"]] == [
-        ("BUY", PRICE)
-    ]
+    assert [(t["side"], Decimal(t["price"])) for t in trades] == [("BUY", PRICE)]
 
 
-async def test_stats_without_players_or_judged_days(api, session):
-    session.add(MarketPrice(ts=NOW, symbol="BTCUSDT", price=PRICE, source="test"))
-    await session.commit()
+async def test_live_price_is_kept_for_ten_seconds(monkeypatch):
+    calls = []
 
-    stats = (await api.get("/api/game/stats")).json()
+    async def fetch(client):
+        calls.append(1)
+        return SimpleNamespace(price=Decimal(len(calls)))
 
-    assert stats["accuracy_pct"] is None
-    assert stats["ahead_pct"] is None
-    assert stats["trades"] == []
+    monkeypatch.setattr(game_api, "fetch_btc_price", fetch)
+    monkeypatch.setattr(game_api, "PRICE_CACHE", [0.0, None])
+    assert await game_api.live_price() == await game_api.live_price() == 1
+    game_api.PRICE_CACHE[0] -= 11
+    assert await game_api.live_price() == 2
 
 
 async def test_admin_list_needs_the_admin_token(api, monkeypatch):

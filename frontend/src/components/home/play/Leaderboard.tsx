@@ -1,7 +1,17 @@
 import type { Dictionary } from "@/i18n";
 import type { Period, Row } from "./useGame";
 
-/** The table by percent return, the AI team's row and the visitor's own row marked. */
+const TOP = 5;
+
+/** Rows to show first: the top five, then the AI team and the visitor wherever they are,
+ * with a gap marker (null) wherever ranks are skipped. */
+export function summary(rows: Row[], nickname: string | null): (Row | null)[] {
+  const keep = rows.filter((r) => r.rank <= TOP || r.is_ai || r.nickname === nickname);
+  return keep.flatMap((r, k) => (k > 0 && r.rank > keep[k - 1].rank + 1 ? [null, r] : [r]));
+}
+
+/** The table by percent return: a summary that always shows the AI team and the visitor,
+ * then every row in rank order below it. Only those two rows are framed in orange. */
 export function Leaderboard({
   t,
   rows,
@@ -19,6 +29,30 @@ export function Leaderboard({
 }) {
   const pct = (n: number) =>
     new Intl.NumberFormat(loc, { signDisplay: "always", maximumFractionDigits: 2 }).format(n) + "%";
+  const ranked = rows?.some((r) => r.nickname === nickname);
+
+  const line = (r: Row, key: string) => {
+    const own = r.nickname === nickname && !r.is_ai;
+    return (
+      <li
+        key={key}
+        className={`flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-[14px] ${r.is_ai || own ? "border-[1.5px] border-orange bg-orange/15" : "bg-soft"}`}
+      >
+        <span className="w-7 font-mono text-[13px] text-muted">{r.rank}</span>
+        {r.is_ai && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src="/assets/av_pm.jpg" alt="" className="h-6 w-6 rounded-full border-[1.5px] border-line" />
+        )}
+        <span dir="auto" className="min-w-0 flex-1 truncate font-semibold">
+          {r.is_ai ? t.ai : r.nickname}
+          {own && <span className="font-normal text-muted"> ({t.you})</span>}
+        </span>
+        <span dir="ltr" className={`font-mono text-[13px] font-bold ${r.return_pct < 0 ? "text-accent" : "text-green"}`}>
+          {pct(r.return_pct)}
+        </span>
+      </li>
+    );
+  };
 
   return (
     <div className="flex min-h-[260px] flex-col overflow-hidden rounded-[20px] border-2 border-line bg-card shadow-[5px_5px_0_var(--line)] snap:min-h-0">
@@ -38,30 +72,34 @@ export function Leaderboard({
           ))}
         </div>
       </div>
-      <ol className="m-0 flex flex-1 list-none flex-col gap-1 overflow-y-auto p-2">
-        {rows?.map((r) => {
-          const own = r.nickname === nickname;
-          return (
-            <li
-              key={r.nickname}
-              className={`flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-[14px] ${r.is_ai ? "border-[1.5px] border-orange bg-orange/15" : own ? "bg-soft" : ""}`}
-            >
-              <span className="w-6 font-mono text-[13px] text-muted">{r.rank}</span>
-              {r.is_ai && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src="/assets/av_pm.jpg" alt="" className="h-6 w-6 rounded-full border-[1.5px] border-line" />
-              )}
+      <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
+        <ol aria-label={t.boardTitle} className="m-0 flex list-none flex-col gap-1 p-0">
+          {rows &&
+            summary(rows, nickname).map((r, k) =>
+              r ? (
+                line(r, `top-${r.rank}`)
+              ) : (
+                <li key={`gap-${k}`} aria-hidden="true" className="text-center leading-none tracking-[4px] text-muted">
+                  ⋮
+                </li>
+              ),
+            )}
+          {nickname && rows && !ranked && (
+            <li className="flex items-center gap-2.5 rounded-xl border-[1.5px] border-orange bg-orange/15 px-2.5 py-1.5 text-[14px]">
+              <span className="w-7 font-mono text-[13px] text-muted">–</span>
               <span dir="auto" className="min-w-0 flex-1 truncate font-semibold">
-                {r.is_ai ? t.ai : r.nickname}
-                {own && <span className="font-normal text-muted"> ({t.you})</span>}
+                {nickname} <span className="font-normal text-muted">({t.you})</span>
               </span>
-              <span dir="ltr" className={`font-mono text-[13px] font-bold ${r.return_pct < 0 ? "text-accent" : "text-green"}`}>
-                {pct(r.return_pct)}
-              </span>
+              <span className="text-[12px] text-muted">{t.notRanked}</span>
             </li>
-          );
-        })}
-      </ol>
+          )}
+        </ol>
+        {rows && rows.length > summary(rows, nickname).length && (
+          <ol aria-label={t.all} className="m-0 mt-2 flex list-none flex-col gap-1 border-t-[1.5px] border-dashed border-line p-0 pt-2">
+            {rows.map((r) => line(r, `all-${r.rank}`))}
+          </ol>
+        )}
+      </div>
       <p className="m-0 border-t-[1.5px] border-line px-4 py-2 text-[12px] text-muted">{t.entry}</p>
     </div>
   );

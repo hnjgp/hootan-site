@@ -1,5 +1,6 @@
 """Trading floor endpoints: start today's meeting (the worker holds it), watch it
-live or replay the last one, list past meetings, and the team's running score.
+live or replay the last one, list past meetings, the team's running score and its
+trades for the price chart.
 
 Every visitor sees whole meetings, decisions included.
 """
@@ -11,7 +12,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import MarketPrice, SessionEvent, TradingSession
+from app.db.models import MarketPrice, PortfolioTrade, SessionEvent, TradingSession
 from app.db.session import get_session
 from app.security.rate_limit import RateLimiter, limit_by_ip
 from app.trading.guard import first_session_price
@@ -24,6 +25,7 @@ START_LIMITERS = (RateLimiter(5, timedelta(days=1)),)
 start_limits = limit_by_ip(*START_LIMITERS)
 # Today's own meeting is shown in these states; otherwise the last done one.
 SHOWN_TODAY = ("scheduled", "running", "done")
+TRADES = 60
 
 
 @router.post("/sessions/today/start", dependencies=[Depends(start_limits)])
@@ -160,3 +162,17 @@ async def summary(
         if last
         else None,
     }
+
+
+@router.get("/trades")
+async def trades(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[dict]:
+    """The team's latest buys and sells, oldest first, for the chart markers."""
+    rows = await session.scalars(
+        select(PortfolioTrade).order_by(PortfolioTrade.created_at.desc()).limit(TRADES)
+    )
+    return [
+        {"ts": t.created_at, "side": t.side, "price": t.price}
+        for t in reversed(list(rows))
+    ]

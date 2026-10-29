@@ -233,10 +233,8 @@
       "Stake 10% to 100% of your balance; a move under 0.2% is a draw.",
       "If you are right and the AI team is wrong, that day's profit doubles."
     ],
-    "virtual": "Virtual money only. Not financial advice.",
     "yourMove": "Your move",
     "errPrice": "The live price is unavailable right now. Try again in a few minutes.",
-    "wallet": "Balance",
     "streak": "Wins in a row",
     "teamToday": "Team today",
     "teamNone": "No meeting yet, so no double bonus today.",
@@ -261,13 +259,6 @@
       "lose": "Loss",
       "draw": "Draw"
     },
-    "stats": {
-      "team": "Team return",
-      "hold": "Just holding",
-      "accuracy": "Team accuracy this month",
-      "ahead": "Players ahead of the team",
-      "none": "Not yet"
-    },
     "chartTitle": "Bitcoin price",
     "ranges": {
       "24h": "24 hours",
@@ -282,7 +273,17 @@
     "all": "All time",
     "ai": "AI Trading Team",
     "you": "you",
-    "entry": "You join the table after 3 settled predictions."
+    "entry": "Your first prediction puts you on the table.",
+    "needLogin": "You need to log in to predict.",
+    "mine": {
+      "return": "Your return",
+      "balance": "Your balance",
+      "hold": "If you had just held",
+      "ahead": "Ahead of the AI team?",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "notRanked": "Not on the table yet"
   },
   "projects": {
     "tag": "things I've built",
@@ -1059,13 +1060,10 @@
   "auth": {
     "login": "Log in",
     "signup": "Sign up",
-    "loginTitle": "Log in to join the prediction game",
     "signupTitle": "Create an account",
     "nickname": "Username",
-    "nicknameHint": "3 to 20 letters or digits; _ and . are fine too.",
     "password": "Password",
-    "passwordHint": "Pick a password you don't use anywhere else.",
-    "email": "Email (optional)",
+    "email": "Email",
     "phone": "Phone (optional)",
     "noAccount": "No account yet?",
     "haveAccount": "Already have an account?",
@@ -1073,10 +1071,11 @@
     "photo": "Set profile photo",
     "account": "Account",
     "errLogin": "Wrong username or password.",
-    "errTaken": "Someone already took that username. Try another one.",
-    "errBad": "Check the username, email or phone: usernames are 3 to 20 letters or digits, no spaces.",
+    "errTaken": "That username is taken.",
+    "errBad": "The email or phone is not valid.",
     "errLimit": "Too many tries from this network. Please try again later.",
     "errOther": "Something went wrong. Please try again in a moment.",
-    "errPhoto": "That file is not an image or could not be opened."
+    "errPhoto": "That file is not an image or could not be opened.",
+    "remember": "Remember me"
   }
 }

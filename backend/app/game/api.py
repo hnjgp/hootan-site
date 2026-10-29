@@ -1,6 +1,7 @@
-"""Prediction game endpoints: daily prediction, me, leaderboard, live price and
-stats (CLAUDE.md 4.2). Accounts are in accounts.py. No LLM is called here."""
+"""Prediction game endpoints: daily prediction, me, leaderboard and live price
+(CLAUDE.md 4.2). Accounts are in accounts.py. No LLM is called here."""
 
+import time
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -10,20 +11,22 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Player, Prediction
+from app.db.models import MarketPrice, Player, Prediction
 from app.db.session import get_session
-from app.game.leaderboard import Period, ai_row, leaderboard, player_rows
+from app.game.leaderboard import Period, ai_row, leaderboard, pct
 from app.game.players import require_player
 from app.game.scoring import stake_usd, streak
-from app.game.stats import players_ahead, recent_trades, team_accuracy
 from app.market.prices import PriceUnavailable, fetch_btc_price, make_client
 from app.security.rate_limit import RateLimiter
+from app.trading.portfolio import INITIAL_CASH
 from app.trading.run import trading_day
 
 router = APIRouter(prefix="/api/game")
 
 PREDICTION_LIMITER = RateLimiter(5, timedelta(days=1))
 HISTORY = 30
+PRICE_TTL = 10
+PRICE_CACHE: list = [0.0, None]
 
 
 class NewPrediction(BaseModel):
@@ -32,12 +35,20 @@ class NewPrediction(BaseModel):
 
 
 async def live_price() -> Decimal:
-    """BTC price right now: a prediction's reference is the price when it is made."""
+    """BTC price right now: a prediction's reference is the price when it is made.
+
+    Kept for 10 seconds, so many visitors polling the page make few exchange calls.
+    """
+    fetched_at, price = PRICE_CACHE
+    if price is not None and time.monotonic() - fetched_at < PRICE_TTL:
+        return price
     try:
         async with make_client() as client:
-            return (await fetch_btc_price(client)).price
+            price = (await fetch_btc_price(client)).price
     except PriceUnavailable:
         raise HTTPException(status_code=503, detail="Price unavailable") from None
+    PRICE_CACHE[:] = [time.monotonic(), price]
+    return price
 
 
 def check_limit(limiter: RateLimiter, request: Request) -> None:
@@ -61,7 +72,8 @@ def prediction_out(p: Prediction) -> dict:
 
 
 async def me_out(session: AsyncSession, player: Player) -> dict:
-    """Wallet, streak, today's prediction and recent history, newest first."""
+    """Wallet, return, buy-and-hold since sign-up, the AI team's return to compare,
+    streak, today's prediction and recent history, newest first."""
     rows = list(
         await session.scalars(
             select(Prediction)
@@ -70,9 +82,21 @@ async def me_out(session: AsyncSession, player: Player) -> dict:
             .limit(HISTORY)
         )
     )
-    today = trading_day(datetime.now(UTC))
+    now = datetime.now(UTC)
+    today = trading_day(now)
+    price = await session.scalar(
+        select(MarketPrice.price).order_by(MarketPrice.ts.desc()).limit(1)
+    )
+    held = ai = None
+    if price is not None:
+        ai = (await ai_row(session, "all", now))["return_pct"]
+        if player.signup_price:
+            held = round(INITIAL_CASH * price / player.signup_price, 2)
     return {
         "nickname": player.nickname,
+        "return_pct": pct(player.balance_usd - INITIAL_CASH, INITIAL_CASH),
+        "hold_usd": held,
+        "ai_return_pct": ai,
         "avatar": player.avatar is not None,
         "balance_usd": player.balance_usd,
         "streak": streak([p.result for p in rows if p.result]),
@@ -135,21 +159,3 @@ async def get_leaderboard(
 async def price_now(price: Annotated[Decimal, Depends(live_price)]) -> dict:
     """The BTC price a prediction made now would use as its reference."""
     return {"price": price}
-
-
-@router.get("/stats")
-async def get_stats(
-    session: Annotated[AsyncSession, Depends(get_session)],
-) -> dict:
-    """Team accuracy this season, players ahead of the team this month, team trades."""
-    now = datetime.now(UTC)
-    right, decided = await team_accuracy(session, now)
-    rows = await player_rows(session, "month", now)
-    ahead, players = players_ahead(rows + [await ai_row(session, "month", now)])
-    return {
-        "accuracy_pct": round(right / decided * 100) if decided else None,
-        "decided": decided,
-        "ahead_pct": round(ahead / players * 100) if players else None,
-        "players": players,
-        "trades": await recent_trades(session),
-    }

@@ -2,43 +2,52 @@
 
 import { useEffect, useState } from "react";
 import type { Dictionary } from "@/i18n";
-import type { Stats } from "./useGame";
+import type { Live, Trade } from "./useGame";
 
 type Range = "24h" | "7d" | "season";
 type Point = { ts: string; price: number };
 const RANGES: Range[] = ["24h", "7d", "season"];
+/** New 5-minute samples arrive this often; the live price moves the line's end in between. */
+const SERIES_MS = 5 * 60_000;
 
-/** Hand-drawn BTC line for one range, with the AI team's buys and sells on it.
+/** Hand-drawn BTC line for one range ending at the live price, with the AI team's buys and sells on it.
  * The line is a stretched SVG; the markers are positioned in percent so they stay round. */
 export function PriceChart({
   t,
   trades,
+  live,
   loc,
 }: {
   t: Dictionary["play"];
-  trades: Stats["trades"];
+  trades: Trade[];
+  live: Live | null;
   loc: string;
 }) {
   const [range, setRange] = useState<Range>("24h");
   const [points, setPoints] = useState<Point[] | null>(null);
 
   useEffect(() => {
-    fetch(`/api/market/btc?range=${range}`)
-      .then((r) => r.json())
-      .then((body: { points: Point[] }) => setPoints(body.points));
+    const load = () =>
+      fetch(`/api/market/btc?range=${range}`)
+        .then((r) => r.json())
+        .then((body: { points: Point[] }) => setPoints(body.points));
+    load();
+    const id = setInterval(load, SERIES_MS);
+    return () => clearInterval(id);
   }, [range]);
 
-  const times = points?.map((p) => Date.parse(p.ts)) ?? [];
+  const series = points && live ? [...points, { ts: new Date(live.at).toISOString(), price: Number(live.price) }] : points;
+  const times = series?.map((p) => Date.parse(p.ts)) ?? [];
   const [t0, t1] = [times[0], times.at(-1)! + 1];
   const marks = trades
     .map((tr) => ({ ...tr, x: Date.parse(tr.ts), y: Number(tr.price) }))
     .filter((m) => m.x >= t0 && m.x <= t1 + 3_600_000);
-  const ys = [...(points ?? []).map((p) => p.price), ...marks.map((m) => m.y)];
+  const ys = [...(series ?? []).map((p) => p.price), ...marks.map((m) => m.y)];
   const [lo, hi] = [Math.min(...ys), Math.max(...ys)];
   const pad = (hi - lo) * 0.12 || 1;
   const sx = (x: number) => ((x - t0) / Math.max(t1 - t0, 1)) * 100;
   const sy = (y: number) => 100 - ((y - lo + pad) / (hi - lo + 2 * pad)) * 100;
-  const line = (points ?? [])
+  const line = (series ?? [])
     .map((p, k) => `${k ? "L" : "M"}${sx(times[k]).toFixed(2)},${sy(p.price).toFixed(2)}`)
     .join(" ");
   const usd = (v: number) => "$" + Math.round(v).toLocaleString(loc);
@@ -48,9 +57,10 @@ export function PriceChart({
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h3 className="m-0 text-[15px] font-bold">
           {t.chartTitle}
-          {points?.length ? (
-            <span dir="ltr" className="mx-2 font-mono text-[13px] font-normal text-muted">
-              {usd(points.at(-1)!.price)}
+          {series?.length ? (
+            <span dir="ltr" className="mx-2 inline-flex items-center gap-1.5 font-mono text-[13px] font-normal text-muted">
+              {live && <span aria-hidden="true" className="pulse h-2 w-2 rounded-full bg-orange" />}
+              {usd(series.at(-1)!.price)}
             </span>
           ) : null}
         </h3>
@@ -70,7 +80,7 @@ export function PriceChart({
       </div>
 
       <div dir="ltr" className="relative min-h-[110px] flex-1">
-        {points && points.length > 1 ? (
+        {series && series.length > 1 ? (
           <>
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
               {[25, 50, 75].map((y) => (

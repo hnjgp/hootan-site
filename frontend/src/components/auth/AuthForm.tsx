@@ -38,9 +38,8 @@ export function AuthForm({
   const submit = async (form: FormData) => {
     const value = (k: string) => String(form.get(k) ?? "").trim() || null;
     setBusy(true);
-    const out = signup
-      ? await signUp({ nickname: value("nickname")!, password: String(form.get("password")), email: value("email"), phone: value("phone") })
-      : await logIn(value("nickname")!, String(form.get("password")));
+    const login = { nickname: value("nickname")!, password: String(form.get("password")), remember: form.get("remember") === "on" };
+    const out = signup ? await signUp({ ...login, email: value("email")!, phone: value("phone") }) : await logIn(login);
     setBusy(false);
     setFailure(out);
     if (out === null) onDone?.();
@@ -57,11 +56,11 @@ export function AuthForm({
       <b className="text-[16px]">{signup ? t.signupTitle : (title ?? t.login)}</b>
       {signup && (
         <div className="grid grid-cols-2 gap-2">
-          {field("email", t.email, { type: "email", dir: "auto", autoComplete: "email" })}
+          {field("email", t.email, { type: "email", dir: "auto", required: true, autoComplete: "email" })}
           {field("phone", t.phone, { type: "tel", dir: "auto", autoComplete: "tel" })}
         </div>
       )}
-      {field("nickname", t.nickname, { dir: "auto", required: true, minLength: 3, maxLength: 20, autoComplete: "username" })}
+      {field("nickname", t.nickname, { dir: "auto", required: true, maxLength: 20, autoComplete: "username" })}
       {field("password", t.password, {
         type: "password",
         dir: "auto",
@@ -69,7 +68,10 @@ export function AuthForm({
         maxLength: 128,
         autoComplete: signup ? "new-password" : "current-password",
       })}
-      {signup && <span className="text-[12px] text-muted">{t.passwordHint}</span>}
+      <label className="flex items-center gap-2 text-[13px]">
+        <input type="checkbox" name="remember" className="h-4 w-4 accent-[#e8692a]" />
+        {t.remember}
+      </label>
       <button
         type="submit"
         disabled={busy}

@@ -12,10 +12,7 @@ from app.game.season import season_day, season_start
 from app.trading.portfolio import INITIAL_CASH, load_portfolio
 
 Period = Literal["month", "all"]
-# A player appears after this many settled predictions.
-MIN_PREDICTIONS = 3
 AI_NAME = "AI Trading Team"
-TOP = 50
 
 
 def pct(gain: Decimal, base: Decimal) -> float:
@@ -24,7 +21,7 @@ def pct(gain: Decimal, base: Decimal) -> float:
 
 
 async def player_rows(db: AsyncSession, period: Period, now: datetime) -> list[dict]:
-    """Players with enough settled predictions and their return for the period.
+    """Players with at least one prediction and their return for the period.
 
     A month's return is its P&L over the balance at the month's start (balance minus it).
     """
@@ -33,9 +30,7 @@ async def player_rows(db: AsyncSession, period: Period, now: datetime) -> list[d
     query = (
         select(Player.nickname, Player.balance_usd, func.count(), month_pnl)
         .join(Prediction)
-        .where(Prediction.result.is_not(None))
         .group_by(Player.id)
-        .having(func.count() >= MIN_PREDICTIONS)
     )
     if period == "month":
         query = query.having(func.count().filter(in_season) > 0)
@@ -83,7 +78,7 @@ async def ai_row(db: AsyncSession, period: Period, now: datetime) -> dict:
 
 
 async def leaderboard(db: AsyncSession, period: Period, now: datetime) -> list[dict]:
-    """Top rows, best return first, the AI team among them, each with its rank."""
+    """Every ranked row, best return first, the AI team among them, each with its rank."""
     rows = await player_rows(db, period, now) + [await ai_row(db, period, now)]
     rows.sort(key=lambda r: r["return_pct"], reverse=True)
-    return [{"rank": i} | r for i, r in enumerate(rows[:TOP], start=1)]
+    return [{"rank": i} | r for i, r in enumerate(rows, start=1)]

@@ -37,7 +37,7 @@ class Player(Base):
     """A registered player with a virtual USD wallet; the signed cookie says who is logged in.
 
     The password is stored as typed: Hootan wants to read it in the admin panel
-    (Decision Log 2026-10-30). Email and phone are optional.
+    (Decision Log 2026-10-30). Email is required, phone optional.
     """
 
     __tablename__ = "players"
@@ -51,6 +51,8 @@ class Player(Base):
     email: Mapped[str | None] = mapped_column(String(254))
     phone: Mapped[str | None] = mapped_column(String(20))
     avatar: Mapped[bytes | None] = mapped_column(LargeBinary)
+    # BTC price at sign-up: what 100,000 USD held since then would be worth.
+    signup_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
     created_ip_hash: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = created_at_column()
 

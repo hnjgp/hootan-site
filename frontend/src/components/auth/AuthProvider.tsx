@@ -15,11 +15,16 @@ export type Me = {
   nickname: string;
   avatar: boolean;
   balance_usd: string;
+  return_pct: number;
+  /** What 100,000 USD in BTC bought at sign-up is worth now; null for old accounts. */
+  hold_usd: string | null;
+  ai_return_pct: number | null;
   streak: number;
   today: Prediction | null;
   predictions: Prediction[];
 };
-export type SignUp = { nickname: string; password: string; email: string | null; phone: string | null };
+export type LogIn = { nickname: string; password: string; remember: boolean };
+export type SignUp = LogIn & { email: string; phone: string | null };
 /** The HTTP status of a failed request (0 when the network failed), or null. */
 export type Failure = number | null;
 
@@ -32,7 +37,7 @@ type Auth = {
   /** Bumped after a new photo so the <img> reloads it. */
   photo: number;
   signUp: (body: SignUp) => Promise<Failure>;
-  logIn: (nickname: string, password: string) => Promise<Failure>;
+  logIn: (body: LogIn) => Promise<Failure>;
   logOut: () => Promise<void>;
   setPhoto: (file: File) => Promise<boolean>;
 };
@@ -90,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMe,
     photo,
     signUp: (body) => enter("/api/game/players", body),
-    logIn: (nickname, password) => enter("/api/game/login", { nickname, password }),
+    logIn: (body) => enter("/api/game/login", body),
     logOut: async () => {
       await fetch("/api/game/logout", { method: "POST" });
       setMe(null);

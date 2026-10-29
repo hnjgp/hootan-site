@@ -7,8 +7,10 @@ import type { Failure, Me } from "../../auth/AuthProvider";
 import type { Decision } from "../trading/useMeeting";
 
 const BONUS_FOR: Partial<Record<Decision, "up" | "down">> = { BUY: "down", SELL: "up" };
+const START_USD = 100_000;
 
-/** The visitor's side of the game: log in (or sign up), then one prediction a day and its result. */
+/** The visitor's side of the game: one prediction a day and its result. Logged-out visitors
+ * see the same form dimmed; using it asks them to log in (or sign up). */
 export function Move({
   t,
   auth,
@@ -32,34 +34,26 @@ export function Move({
 }) {
   const [direction, setDirection] = useState<"up" | "down" | null>(null);
   const [pct, setPct] = useState(50);
+  const [needLogin, setNeedLogin] = useState(false);
 
   const usd = (v: string | number) => "$" + Number(v).toLocaleString(loc, { maximumFractionDigits: 0 });
   const signed = (v: string) =>
     new Intl.NumberFormat(loc, { style: "currency", currency: "USD", signDisplay: "always", maximumFractionDigits: 0 }).format(Number(v));
   const dirWord = (d: "up" | "down") => (d === "up" ? t.up : t.down);
-  const error = (codes: Record<number, string>) =>
-    failure !== null && <p role="alert" className="m-0 text-[13px] text-accent">{codes[failure] ?? auth.errOther}</p>;
   const cta = "btn min-h-11 w-full rounded-xl border-[1.5px] border-line bg-orange text-[15px] font-bold text-[#1e1c1a] disabled:opacity-50";
 
   if (me === undefined) return <div className="flex-1" />;
-  if (me === null) return <AuthForm t={auth} title={auth.loginTitle} />;
+  if (me === null && needLogin) return <AuthForm t={auth} title={t.needLogin} />;
 
-
-  const last = me.predictions.find((p) => p.result);
+  /** Logged out, every control just asks to log in. */
+  const guard = (act: () => void) => () => (me ? act() : setNeedLogin(true));
+  const last = me?.predictions.find((p) => p.result);
   const bonus = teamToday && BONUS_FOR[teamToday];
+  const balance = me ? Number(me.balance_usd) : START_USD;
 
   return (
     <div className="flex min-h-0 flex-col gap-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 rounded-xl bg-soft px-3 py-1.5 text-[12px] text-muted">
-        <span>
-          {t.wallet} <b dir="ltr" className="inline-block font-mono text-[15px] text-ink">{usd(me.balance_usd)}</b>
-        </span>
-        <span>
-          {t.streak} <b className="font-mono text-[15px] text-ink">{me.streak}</b>
-        </span>
-      </div>
-
-      {me.today ? (
+      {me?.today ? (
         <div className="pop flex flex-col gap-1 rounded-xl border-2 border-line p-3 text-[14px]">
           <b>{t.today}</b>
           <span>
@@ -82,10 +76,10 @@ export function Move({
         </div>
       ) : (
         <form
-          className="flex flex-col gap-2"
+          className={`flex flex-col gap-2 ${me ? "" : "opacity-60"}`}
           onSubmit={(e) => {
             e.preventDefault();
-            if (direction) predict(direction, pct);
+            guard(() => direction && predict(direction, pct))();
           }}
         >
           <div className="text-[13px] leading-[1.5]">
@@ -107,7 +101,7 @@ export function Move({
                 key={d}
                 type="button"
                 aria-pressed={direction === d}
-                onClick={() => setDirection(d)}
+                onClick={guard(() => setDirection(d))}
                 className={`btn min-h-10 rounded-xl border-[1.5px] border-line text-[15px] font-bold aria-pressed:text-[#1e1c1a] ${d === "up" ? "aria-pressed:bg-[#6fd3a8]" : "aria-pressed:bg-orange"}`}
               >
                 {d === "up" ? "▲" : "▼"} {dirWord(d)}
@@ -118,7 +112,7 @@ export function Move({
             <span className="flex justify-between">
               <span className="text-muted">{t.stake}</span>
               <span dir="ltr" className="font-mono font-bold">
-                {pct}% · {usd((Number(me.balance_usd) * pct) / 100)}
+                {pct}% · {usd((balance * pct) / 100)}
               </span>
             </span>
             <input
@@ -127,19 +121,30 @@ export function Move({
               max={100}
               step={10}
               value={pct}
-              onChange={(e) => setPct(Number(e.target.value))}
+              onChange={(e) => guard(() => setPct(Number(e.target.value)))()}
               className="accent-[#e8692a]"
             />
           </label>
-          <button type="submit" disabled={busy || !direction} className={cta}>{t.submit}</button>
-          {error({ 503: t.errPrice })}
+          <button type="submit" disabled={busy || (!!me && !direction)} className={cta}>{t.submit}</button>
+          {failure !== null && (
+            <p role="alert" className="m-0 text-[13px] text-accent">
+              {failure === 503 ? t.errPrice : auth.errOther}
+            </p>
+          )}
         </form>
       )}
 
-      {last && (
-        <div className="text-[13px] text-muted">
-          {t.last}: <b className={last.result === "lose" ? "text-accent" : last.result === "win" ? "text-green" : "text-ink"}>{t.results[last.result!]}</b>{" "}
-          <span dir="ltr" className="font-mono">{signed(last.pnl_usd!)}</span>
+      {me && (last || me.streak > 0) && (
+        <div className="flex flex-wrap justify-between gap-x-3 text-[13px] text-muted">
+          {last && (
+            <span>
+              {t.last}: <b className={last.result === "lose" ? "text-accent" : last.result === "win" ? "text-green" : "text-ink"}>{t.results[last.result!]}</b>{" "}
+              <span dir="ltr" className="font-mono">{signed(last.pnl_usd!)}</span>
+            </span>
+          )}
+          <span>
+            {t.streak} <b className="font-mono text-ink">{me.streak}</b>
+          </span>
         </div>
       )}
     </div>

@@ -2,7 +2,6 @@ from datetime import date
 from decimal import Decimal
 
 from app.game.scoring import settle, stake_usd, streak
-from app.game.stats import players_ahead
 from app.jalali import month_start, to_jalali
 
 REF = Decimal(80_000)
@@ -74,13 +73,3 @@ def test_persian_month_start():
     assert month_start(date(2026, 10, 27)) == date(2026, 10, 23)
     assert month_start(date(2026, 10, 23)) == date(2026, 10, 23)
     assert month_start(date(2026, 10, 22)) == date(2026, 9, 23)
-
-
-def test_players_ahead_of_the_ai_row():
-    rows = [
-        {"return_pct": 3.0, "is_ai": False},
-        {"return_pct": 1.0, "is_ai": True},
-        {"return_pct": 1.0, "is_ai": False},
-        {"return_pct": -2.0, "is_ai": False},
-    ]
-    assert players_ahead(rows) == (1, 3)

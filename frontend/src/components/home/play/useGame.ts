@@ -5,35 +5,39 @@ import { useAuth, type Failure, type Prediction } from "../../auth/AuthProvider"
 import type { Decision, Summary } from "../trading/useMeeting";
 
 export type Row = { rank: number; nickname: string; return_pct: number; is_ai: boolean };
-export type Stats = {
-  accuracy_pct: number | null;
-  ahead_pct: number | null;
-  trades: { ts: string; side: "BUY" | "SELL"; price: string }[];
-};
+export type Live = { price: string; at: number };
+export type Trade = { ts: string; side: "BUY" | "SELL"; price: string };
 export type Period = "month" | "all";
+
+/** The server keeps the live price for 10 seconds; asking more often gains nothing. */
+const PRICE_MS = 10_000;
 
 const json = async <T>(url: string, init?: RequestInit): Promise<[number, T]> => {
   const r = await fetch(url, init);
   return [r.status, r.ok ? await r.json() : null];
 };
 
-/** Everything the game section shows besides the account: live price, the team, the table. */
+const livePrice = () =>
+  json<{ price: string }>("/api/game/price").then(([, body]) => (body ? { price: body.price, at: Date.now() } : null));
+
+/** Everything the game section shows besides the account: live price, the team, its trades, the table. */
 export function useGame() {
   const { me, setMe } = useAuth();
-  const [price, setPrice] = useState<string | null>(null);
+  const [live, setLive] = useState<Live | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [trades, setTrades] = useState<Trade[]>([]);
   const [period, setPeriod] = useState<Period>("month");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<Failure>(null);
 
-  const loadPrice = () => json<{ price: string }>("/api/game/price").then(([, body]) => setPrice(body?.price ?? null));
 
   useEffect(() => {
     json<Summary>("/api/trading/summary").then(([, body]) => setSummary(body));
-    json<Stats>("/api/game/stats").then(([, body]) => setStats(body));
-    json<{ price: string }>("/api/game/price").then(([, body]) => setPrice(body?.price ?? null));
+    json<Trade[]>("/api/trading/trades").then(([, body]) => setTrades(body ?? []));
+    livePrice().then(setLive);
+    const id = setInterval(() => livePrice().then(setLive), PRICE_MS);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export function useGame() {
       if (out) setMe((m) => m && { ...m, today: out, predictions: [out, ...m.predictions] });
       else {
         setFailure(status);
-        loadPrice();
+        livePrice().then(setLive);
       }
     } catch {
       setFailure(0);
@@ -63,5 +67,5 @@ export function useGame() {
 
   const teamToday: Decision | null = summary?.today_status === "done" ? (summary.last?.decision ?? null) : null;
 
-  return { me, price, summary, stats, teamToday, period, setPeriod, rows, busy, failure, predict };
+  return { me, live, price: live?.price ?? null, summary, trades, teamToday, period, setPeriod, rows, busy, failure, predict };
 }

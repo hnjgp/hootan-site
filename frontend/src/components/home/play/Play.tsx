@@ -8,20 +8,23 @@ import { useGame } from "./useGame";
 
 /**
  * The prediction game against the AI trading team on one screen: the rules in one card,
- * the visitor's move, the team's numbers with the price chart, and the leaderboard.
+ * the visitor's move, their own numbers with the live price chart, and the leaderboard.
  */
 export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionary["auth"]; lang: Locale }) {
   const game = useGame();
-  const { summary: s, stats } = game;
+  const me = game.me;
   const loc = lang === "fa" ? "fa-IR-u-nu-latn" : "en-US";
   const pct = (n: number) =>
     new Intl.NumberFormat(loc, { signDisplay: "always", maximumFractionDigits: 2 }).format(n) + "%";
-  const ret = (v: string) => (s ? (Number(v) / Number(s.start_usd) - 1) * 100 : 0);
-  const tiles: [string, string | null, string?][] = [
-    [t.stats.team, s && pct(ret(s.value_usd)), s ? (ret(s.value_usd) < 0 ? "text-accent" : "text-green") : ""],
-    [t.stats.hold, s && pct(ret(s.hold_usd)), s ? (ret(s.hold_usd) < 0 ? "text-accent" : "text-green") : ""],
-    [t.stats.accuracy, stats && (stats.accuracy_pct === null ? t.stats.none : `${stats.accuracy_pct}%`)],
-    [t.stats.ahead, stats && (stats.ahead_pct === null ? t.stats.none : `${stats.ahead_pct}%`)],
+  const usd = (v: string) => "$" + Number(v).toLocaleString(loc, { maximumFractionDigits: 0 });
+  const tone = (good: boolean) => (good ? "text-green" : "text-accent");
+  const ahead = me && me.ai_return_pct !== null ? me.return_pct > me.ai_return_pct : null;
+  // The visitor's own numbers; a dash until they log in.
+  const tiles: [string, string | null, string][] = [
+    [t.mine.return, me ? pct(me.return_pct) : null, me ? tone(me.return_pct >= 0) : ""],
+    [t.mine.balance, me ? usd(me.balance_usd) : null, ""],
+    [t.mine.hold, me?.hold_usd ? usd(me.hold_usd) : null, me?.hold_usd ? tone(Number(me.hold_usd) >= 100_000) : ""],
+    [t.mine.ahead, ahead === null ? null : ahead ? t.mine.yes : t.mine.no, ahead === null ? "" : tone(ahead)],
   ];
 
   return (
@@ -47,8 +50,7 @@ export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionar
 
       <div className="flex flex-col gap-5 md:grid md:grid-cols-[1fr_1.2fr_0.9fr] snap:min-h-0 snap:flex-1">
         <div className="flex min-h-0 flex-col gap-2.5 overflow-y-auto rounded-[20px] border-2 border-line bg-card p-4 shadow-[5px_5px_0_var(--line)]">
-          {/* Logged out, the log-in form's own title heads the box. */}
-          <h3 className={`m-0 text-[17px] font-bold ${game.me ? "" : "hidden"}`}>
+          <h3 className="m-0 text-[17px] font-bold">
             {t.yourMove}
             {game.me && (
               <span dir="auto" className="ms-2 rounded-full bg-soft px-2.5 py-0.5 text-[13px] font-semibold">{game.me.nickname}</span>
@@ -59,16 +61,16 @@ export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionar
 
         <div className="flex min-h-0 flex-col gap-3">
           <div className="grid grid-cols-2 gap-2">
-            {tiles.map(([label, value, tone]) => (
+            {tiles.map(([label, value, color]) => (
               <div key={label} className="rounded-[14px] border-[1.5px] border-line bg-card px-3 py-1.5">
                 <div className="truncate text-[12px] text-muted">{label}</div>
-                <div dir="ltr" className={`text-[17px] font-bold rtl:text-right ${value === t.stats.none ? "text-muted" : "font-mono"} ${tone ?? ""}`}>
-                  {value ?? "…"}
+                <div dir="ltr" className={`text-[17px] font-bold rtl:text-right ${value ? color : "text-muted"} ${label === t.mine.ahead ? "" : "font-mono"}`}>
+                  {value ?? "—"}
                 </div>
               </div>
             ))}
           </div>
-          <PriceChart t={t} trades={stats?.trades ?? []} loc={loc} />
+          <PriceChart t={t} trades={game.trades} live={game.live} loc={loc} />
         </div>
 
         <Leaderboard
@@ -81,7 +83,6 @@ export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionar
         />
       </div>
 
-      <p className="mt-3 mb-0 text-[13px] text-muted">{t.virtual}</p>
     </div>
   );
 }
