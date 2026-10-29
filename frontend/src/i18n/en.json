@@ -1076,6 +1076,17 @@
     "errLimit": "Too many tries from this network. Please try again later.",
     "errOther": "Something went wrong. Please try again in a moment.",
     "errPhoto": "That file is not an image or could not be opened.",
-    "remember": "Remember me"
+    "remember": "Remember me",
+    "forgot": "Forgot password?",
+    "forgotTitle": "Reset your password",
+    "forgotHint": "Enter your account's email. We'll send a 6-digit code with your username.",
+    "send": "Send code",
+    "sent": "If this email has an account, a code is on its way. It works for 15 minutes.",
+    "code": "6-digit code",
+    "newPassword": "New password",
+    "reset": "Set password and log in",
+    "errCode": "The code is wrong or expired.",
+    "errEmailTaken": "This email already has an account.",
+    "back": "Back to log in"
   }
 }

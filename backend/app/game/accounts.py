@@ -64,6 +64,11 @@ async def sign_up(
     """Create an account with a 100,000 USD wallet and log it in."""
     if await by_nickname(session, body.nickname):
         raise HTTPException(status_code=409, detail="Nickname taken")
+    taken = await session.scalar(
+        select(Player.id).where(func.lower(Player.email) == body.email.lower())
+    )
+    if taken:
+        raise HTTPException(status_code=409, detail="Email taken")
     check_limit(SIGNUP_LIMITER, request)
     settings = get_settings()
     player = Player(

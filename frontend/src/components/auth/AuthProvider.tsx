@@ -25,8 +25,10 @@ export type Me = {
 };
 export type LogIn = { nickname: string; password: string; remember: boolean };
 export type SignUp = LogIn & { email: string; phone: string | null };
-/** The HTTP status of a failed request (0 when the network failed), or null. */
-export type Failure = number | null;
+export type Reset = { email: string; code: string; password: string; remember: boolean };
+/** The HTTP status of a failed request (0 when the network failed), "email" for an
+ * email that already has an account, or null. */
+export type Failure = number | "email" | null;
 
 const PHOTO_PX = 128;
 
@@ -39,6 +41,9 @@ type Auth = {
   signUp: (body: SignUp) => Promise<Failure>;
   logIn: (body: LogIn) => Promise<Failure>;
   logOut: () => Promise<void>;
+  /** Ask for a reset code by email; the answer is the same for unknown emails. */
+  forgot: (email: string) => Promise<Failure>;
+  reset: (body: Reset) => Promise<Failure>;
   setPhoto: (file: File) => Promise<boolean>;
 };
 
@@ -47,14 +52,16 @@ const AuthContext = createContext<Auth | null>(null);
 export const useAuth = () => useContext(AuthContext)!;
 
 /** Send JSON; the logged-in player on success, the failure status otherwise. */
-async function account(url: string, body: object): Promise<Me | Failure> {
+async function account(url: string, body: object): Promise<Me | Exclude<Failure, null>> {
   try {
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    return r.ok ? r.json() : r.status;
+    if (r.ok) return r.json();
+    if (r.status === 409 && (await r.json()).detail === "Email taken") return "email";
+    return r.status;
   } catch {
     return 0;
   }
@@ -85,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const enter = async (url: string, body: object): Promise<Failure> => {
     const out = await account(url, body);
-    if (typeof out === "number") return out;
+    if (typeof out !== "object") return out;
     setMe(out);
     return null;
   };
@@ -100,6 +107,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetch("/api/game/logout", { method: "POST" });
       setMe(null);
     },
+    forgot: async (email) => {
+      try {
+        const r = await fetch("/api/game/password/forgot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, lang: document.documentElement.lang }),
+        });
+        return r.ok ? null : r.status;
+      } catch {
+        return 0;
+      }
+    },
+    reset: (body) => enter("/api/game/password/reset", body),
     setPhoto: async (file) => {
       try {
         const body = await shrink(file);

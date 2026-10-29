@@ -23,6 +23,7 @@ services:
     environment:
       WATCHFILES_FORCE_POLLING: "true"
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SMTP_HOST: mailpit
     ports:
       - "8000:8000"
     volumes:
@@ -42,12 +43,21 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SMTP_HOST: mailpit
     command: ["python", "-m", "app.worker"]
     volumes:
       - ./backend:/app
     depends_on:
       db:
         condition: service_healthy
+
+  # Development only: catches every email; the inbox is at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
 
   web:
     build: ./frontend

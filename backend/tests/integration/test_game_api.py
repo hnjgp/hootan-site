@@ -1,3 +1,4 @@
+import itertools
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
@@ -29,6 +30,7 @@ NOW = datetime.now(UTC)
 TODAY = trading_day(NOW)
 YESTERDAY = TODAY - timedelta(days=1)
 PRICE = Decimal(80_000)
+EMAILS = itertools.count()
 
 
 @pytest.fixture
@@ -45,7 +47,8 @@ async def api(session):
 
 
 async def join(api, nickname: str = "satoshi", **extra) -> dict:
-    body = {"nickname": nickname, "password": "pw", "email": "a@b.com"} | extra
+    body = {"nickname": nickname, "password": "pw", "email": f"p{next(EMAILS)}@b.com"}
+    body |= extra
     response = await api.post("/api/game/players", json=body)
     assert response.status_code == 201
     return response.json()
@@ -197,7 +200,7 @@ async def test_three_nicknames_per_ip_a_day_and_failures_do_not_count(api):
     api.cookies.clear()
     response = await api.post(
         "/api/game/players",
-        json={"nickname": "fourth", "password": "pw", "email": "a@b.com"},
+        json={"nickname": "fourth", "password": "pw", "email": "fourth@b.com"},
     )
     assert response.status_code == 429
 

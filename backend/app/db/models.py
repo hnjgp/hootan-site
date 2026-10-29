@@ -7,6 +7,7 @@ from decimal import Decimal
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
+    Column,
     Date,
     DateTime,
     ForeignKey,
@@ -37,10 +38,14 @@ class Player(Base):
     """A registered player with a virtual USD wallet; the signed cookie says who is logged in.
 
     The password is stored as typed: Hootan wants to read it in the admin panel
-    (Decision Log 2026-10-30). Email is required, phone optional.
+    (Decision Log 2026-10-30). Email is required and unique ignoring case, phone
+    optional. A password reset code is kept only as a hash, for 15 minutes.
     """
 
     __tablename__ = "players"
+    __table_args__ = (
+        Index("uq_players_email", func.lower(Column("email")), unique=True),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     nickname: Mapped[str] = mapped_column(String(20), unique=True)
@@ -53,6 +58,8 @@ class Player(Base):
     avatar: Mapped[bytes | None] = mapped_column(LargeBinary)
     # BTC price at sign-up: what 100,000 USD held since then would be worth.
     signup_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    reset_code_hash: Mapped[str | None] = mapped_column(String(64))
+    reset_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_ip_hash: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = created_at_column()
 

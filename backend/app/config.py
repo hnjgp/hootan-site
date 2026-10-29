@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     contact_email: str = ""
     admin_token: str = ""
 
+    smtp_host: str = "127.0.0.1"
+    smtp_port: int = 1025
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "no-reply@hootanseifi.com"
+
     llm_base_url: str = "https://api.avalai.ir/v1"
     llm_api_key: str = ""
     model_twin: str = "gemini-2.5-flash-lite"
