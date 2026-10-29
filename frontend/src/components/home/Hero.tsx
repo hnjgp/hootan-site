@@ -3,7 +3,9 @@ import { SectionIcon } from "../icons";
 import { HeroScene } from "./HeroScene";
 import { RobotGame } from "./RobotGame";
 
-export const SECTION_IDS = ["twin", "job-fit", "trading", "projects", "how"] as const;
+export const SECTION_IDS = ["twin", "job-fit", "trading", "projects"] as const;
+/** The last button opens the "this site" project inside the projects section. */
+const TARGETS = [...SECTION_IDS.map((id) => `#${id}`), "#project-site"];
 
 /**
  * Top of the home page: the drawing with the headline as a thought cloud on one side;
@@ -19,7 +21,7 @@ export function Hero({ lang, t, game }: { lang: Locale; t: Dictionary["main"]; g
           {t.buttons.map((label, k) => (
             <a
               key={label}
-              href={`#${SECTION_IDS[k]}`}
+              href={TARGETS[k]}
               className="hint btn group flex items-center gap-3 rounded-2xl border-2 border-line bg-card px-4 py-2 text-ink no-underline shadow-[3px_3px_0_var(--line)]"
             >
               <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl border-[1.5px] border-line bg-bg transition-colors group-hover:bg-orange group-hover:text-[#1e1c1a] group-focus-visible:bg-orange">

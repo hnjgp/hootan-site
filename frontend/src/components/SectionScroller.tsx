@@ -97,6 +97,8 @@ export function SectionScroller() {
       const dir = Math.sign(e.deltaY);
       if (innerCanScroll(e.target as Element, dir)) return;
       e.preventDefault();
+      // An open project box keeps the wheel even at its end, so reading never jumps a section.
+      if ((e.target as Element).closest("[data-panel]")) return;
       const now = performance.now();
       const quiet = now - lastWheel > QUIET_MS;
       lastWheel = now;

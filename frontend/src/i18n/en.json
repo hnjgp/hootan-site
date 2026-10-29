@@ -12,38 +12,6 @@
   "main": {
     "tag": "come in, take a seat",
     "h1": "Hi, I'm Hootan.\nI build things with AI that actually work.",
-    "desk": "the interview desk",
-    "b1": "Hi, I'm Hootan's digital twin. Ask me anything about his work.",
-    "q1": "What's your strongest project?",
-    "a1": "Astra: a LangGraph agent with agentic RAG on pgvector, guardrails, an MCP server and 407 tests.",
-    "ph": "Ask your own question…",
-    "ask": "Ask",
-    "c1": "What have you built with LangGraph?",
-    "c2": "How can we work together?",
-    "c3": "Check my fit for your job →",
-    "alt": "Line drawing of Hootan in an orange beanie, smiling behind a desk with a laptop, a plant and an orange mug",
-    "hover": "Ask me something",
-    "what": "What you can do here",
-    "k1": "01 · digital twin",
-    "k1t": "Interview me, any time",
-    "k1d": "If it doesn't know an answer, it passes your question to the real me.",
-    "k2": "02 · job fit",
-    "k2t": "Paste your job description",
-    "k2d": "An honest score with strengths, gaps and questions worth asking.",
-    "k3": "03 · projects",
-    "k3t": "Case studies, end to end",
-    "k3d": "Architecture, decisions and results for everything I've shipped.",
-    "selected": "selected work",
-    "case": "Case study",
-    "astra": "LangGraph agent with agentic RAG on PostgreSQL + pgvector, role-based tools, guardrails and an MCP server.",
-    "notes": "Turns consultation notes into structured summaries. Full SaaS with sign-in, deployed live.",
-    "inDesign": "in design",
-    "behengam": "Integrated health platform connecting 12 roles of Iran's health system around one patient record, with AI-assisted lab trends and forecasting.",
-    "designNotes": "Design notes",
-    "howTag": "how this site works",
-    "howText": "Next.js, FastAPI and PostgreSQL/pgvector in Docker on one VPS, deployed by GitHub Actions behind Caddy. Every AI call has a daily budget cap.",
-    "arch": "See the architecture",
-    "email": "Email",
     "buttons": [
       "Interview my digital twin",
       "How well I fit your job ad",
@@ -252,5 +220,611 @@
     "todayTitle": "Today's meeting",
     "liveTitle": "live",
     "error": "The meeting could not start. Please try again a bit later."
+  },
+  "projects": {
+    "tag": "things I've built",
+    "h2": "Projects",
+    "sub": "Click a project for the full story: the problem, the architecture, the decisions and the results.",
+    "soon": "Being updated: more projects are coming soon.",
+    "more": "Details",
+    "close": "Close",
+    "github": "Code on GitHub",
+    "private": "The code of this project is not public yet.",
+    "profile": "My GitHub",
+    "stack": "Stack",
+    "items": {
+      "astra": {
+        "title": "Astra",
+        "kind": "Enterprise AI agent platform",
+        "status": "Open source",
+        "short": "A LangGraph agent that decides on its own when to search internal documents, call tools or just answer, inside strict security boundaries.",
+        "key": "407 tests",
+        "lead": "Astra is the backend of an enterprise AI assistant. An LLM agent decides on its own whether it needs internal documents (RAG over PostgreSQL + pgvector), live system tools, both, or neither, and every step runs inside security boundaries. I designed and built it end to end; the focus is the engineering around the model: orchestration, retrieval, security, failure handling, observability, testing and delivery.",
+        "stats": [
+          [
+            "407",
+            "automated tests"
+          ],
+          [
+            "93%",
+            "test coverage"
+          ],
+          [
+            "4",
+            "routes the agent chooses"
+          ],
+          [
+            "1.0",
+            "Recall@3 offline"
+          ]
+        ],
+        "stack": [
+          "Python",
+          "FastAPI",
+          "LangGraph",
+          "PostgreSQL + pgvector",
+          "OpenAI",
+          "Docker",
+          "Prometheus",
+          "GitHub Actions"
+        ],
+        "sections": [
+          {
+            "h": "One request, end to end",
+            "p": "The token is checked and the user's role is loaded from the database. The agent gets only the tools that role may use, and a knowledge base tool limited to the documents this user may read. The input guardrail rejects oversized, hidden-character or prompt-injection input in English and Persian. Every tool call goes through one ToolExecutor: allow-list, role check, schema validation and retry for transient errors. The answer is redacted for secrets and returned with the route taken, the tools used and the sources.",
+            "dia": "flow"
+          },
+          {
+            "h": "The agent as a state machine",
+            "p": "The agent is a LangGraph graph: the model node thinks and calls tools, the tools node runs them, and the result goes back to the model. A timeout or connection error goes to a recovery node instead of crashing the run. Sensitive tools, such as removing a document from the knowledge base, pause the graph with interrupt(); the state is checkpointed in PostgreSQL, so an admin can approve or reject later, even from another process.",
+            "dia": "loop"
+          },
+          {
+            "h": "Agentic RAG: retrieval is a tool",
+            "p": "Search is not glued to every question. The model calls search_knowledge_base only when it needs internal knowledge, so general questions skip the embedding call and the extra context tokens. Documents are chunked with overlap, embedded with text-embedding-3-small and searched by cosine distance on an HNSW index, then reranked by keywords and filtered by a score threshold. Permissions are applied before retrieval, not after: private chunks never reach the model, even if an injection asks for them. Because the model can pick the wrong route, route accuracy is part of the evaluation.",
+            "dia": "routes"
+          },
+          {
+            "h": "Security in layers",
+            "p": "No single check is trusted. Authentication, rate limits, the input guardrail, per-role tool permissions, human approval and output redaction each stop a different kind of failure. Security errors fail closed: an unknown tool or invalid arguments stop the run instead of being retried.",
+            "dia": "layers"
+          },
+          {
+            "h": "Quality and delivery",
+            "p": "407 unit, integration and end-to-end tests run against a real pgvector database; only the external providers are faked. An evaluation harness measures Recall@k, MRR, route accuracy, groundedness and citation rate, and CI runs it as a regression gate next to the coverage gate. Metrics, token usage and estimated cost are exported to Prometheus, and an MCP server written against the specification exposes the read-only tools.",
+            "dia": "bars"
+          },
+          {
+            "h": "Honest limits",
+            "p": "Rate limits, metrics and conversation memory live in process memory, so several workers would need Redis. The reranker is a simple keyword baseline. The injection check matches patterns and is only one layer. The evaluation metrics are lexical heuristics on a small dataset: they catch regressions, they are not a quality claim."
+          }
+        ],
+        "d": {
+          "flow": "How one request flows through Astra",
+          "client": [
+            "Client",
+            "user request"
+          ],
+          "mw": [
+            "Middleware",
+            "request id · rate limit"
+          ],
+          "auth": [
+            "Auth",
+            "JWT · role from DB"
+          ],
+          "guard": [
+            "Input guardrail",
+            "injection check"
+          ],
+          "agent": [
+            "LangGraph agent",
+            "picks the route"
+          ],
+          "llm": [
+            "LLM",
+            "provider"
+          ],
+          "exec": [
+            "ToolExecutor",
+            "allow-list · RBAC · retry"
+          ],
+          "rag": [
+            "RAGService",
+            "embed · retrieve · rerank"
+          ],
+          "pg": [
+            "pgvector",
+            "HNSW index"
+          ],
+          "out": [
+            "Answer + route + sources",
+            "secrets redacted"
+          ],
+          "loop": "The agent's LangGraph state machine",
+          "model": [
+            "model node",
+            "thinks, calls tools"
+          ],
+          "tools": [
+            "tools node",
+            "runs allowed tools"
+          ],
+          "recovery": [
+            "recovery",
+            "timeout or lost connection"
+          ],
+          "approval": [
+            "human approval",
+            "interrupt() · checkpoint"
+          ],
+          "answer": [
+            "final answer",
+            "to the output guardrail"
+          ],
+          "edges": [
+            "tool calls",
+            "result",
+            "error",
+            "sensitive tool",
+            "done"
+          ],
+          "routes": "The four routes the agent can take",
+          "q": "Question",
+          "decide": "Agent decides",
+          "r": [
+            [
+              "normal",
+              "answers directly"
+            ],
+            [
+              "tool",
+              "calls live system tools"
+            ],
+            [
+              "rag",
+              "searches internal documents"
+            ],
+            [
+              "tool + rag",
+              "does both"
+            ]
+          ],
+          "layers": "Security layers around the model",
+          "l": [
+            [
+              "JWT + roles",
+              "who is asking"
+            ],
+            [
+              "Rate limit",
+              "per IP and user"
+            ],
+            [
+              "Input guardrail",
+              "injection, hidden text"
+            ],
+            [
+              "Tool permissions",
+              "allow-list · schema"
+            ],
+            [
+              "Human approval",
+              "destructive tools"
+            ]
+          ],
+          "core": [
+            "Model + tools",
+            "only allowed tools"
+          ],
+          "bars": "Astra's quality numbers",
+          "rows": [
+            [
+              "Test coverage",
+              "93%"
+            ],
+            [
+              "Recall@3 (offline)",
+              "1.0"
+            ],
+            [
+              "MRR (offline)",
+              "1.0"
+            ],
+            [
+              "Automated tests",
+              "407"
+            ]
+          ]
+        }
+      },
+      "notes": {
+        "title": "AI Medical Notes",
+        "kind": "SaaS for doctors",
+        "status": "Open source",
+        "short": "Turns a doctor's consultation notes into a visit summary, next steps and an email to the patient, streamed in real time.",
+        "key": "3 outputs, 1 note",
+        "lead": "Writing up a visit takes time: a summary for the record, the next steps, and a clear message for the patient. In AI Medical Notes the doctor writes the consultation notes once, and the app streams all three back in real time. It is a complete SaaS: sign-in, a paid subscription plan, a protected product page and a serverless backend.",
+        "stats": [
+          [
+            "3",
+            "outputs from one note"
+          ],
+          [
+            "SSE",
+            "real-time streaming"
+          ],
+          [
+            "JWT",
+            "verified on every request"
+          ]
+        ],
+        "stack": [
+          "Next.js",
+          "React",
+          "TypeScript",
+          "Tailwind CSS",
+          "FastAPI",
+          "OpenAI",
+          "Clerk",
+          "Vercel"
+        ],
+        "sections": [
+          {
+            "h": "How it works",
+            "p": "The doctor signs in and opens the product page, which requires the premium plan. The form sends the patient's name, the visit date and the notes to the API with the Clerk token. FastAPI, running as a serverless function on Vercel, verifies the token, builds the prompt and streams the model's answer. The browser receives it as Server-Sent Events and renders the Markdown as it arrives, so the doctor starts reading as soon as the first words arrive instead of waiting for the whole text.",
+            "dia": "flow"
+          },
+          {
+            "h": "Three outputs from one note",
+            "p": "The same notes become three texts for three readers: a visit summary for the doctor's records, the next steps for the doctor, and a draft email that explains the visit to the patient in plain Persian.",
+            "dia": "outputs"
+          },
+          {
+            "h": "Access and billing",
+            "p": "Authentication and subscriptions are handled by Clerk. The backend never trusts the browser: it verifies the token's signature against Clerk's public keys on every request, and only users on the paid plan can open the product page."
+          }
+        ],
+        "d": {
+          "flow": "From the doctor's notes to the streamed answer",
+          "doc": [
+            "Doctor",
+            "notes · visit date"
+          ],
+          "clerk": [
+            "Clerk",
+            "JWT · paid plan"
+          ],
+          "api": [
+            "FastAPI",
+            "serverless on Vercel"
+          ],
+          "ai": [
+            "OpenAI",
+            "streams the answer"
+          ],
+          "browser": [
+            "Browser",
+            "renders Markdown as it arrives"
+          ],
+          "sse": "SSE stream",
+          "outputs": [
+            [
+              "Visit summary",
+              "for the doctor's records"
+            ],
+            [
+              "Next steps",
+              "for the doctor"
+            ],
+            [
+              "Email to the patient",
+              "in plain Persian"
+            ]
+          ]
+        }
+      },
+      "behengam": {
+        "title": "Behengam",
+        "kind": "Integrated health platform",
+        "status": "In design",
+        "short": "Connects 12 roles of Iran's health system around one shared patient record, with an AI layer that gathers and standardizes lab results and shows trends and alerts.",
+        "key": "12 roles",
+        "lead": "Behengam is an integrated health platform for Iran's health system that I founded. It connects 12 roles around one shared patient record, and each role sees the record only as far as its need and access level allow. Its tagline: health in the moment; every role of the health system, coordinated around one page.",
+        "stats": [
+          [
+            "12",
+            "roles on one record"
+          ],
+          [
+            "v2",
+            "interactive investor demo"
+          ],
+          [
+            "8",
+            "fictional sample patients"
+          ]
+        ],
+        "stack": [
+          "HTML",
+          "CSS",
+          "JavaScript",
+          "SVG charts",
+          "localStorage",
+          "HL7 / FHIR (planned)",
+          "Kafka (planned)",
+          "Django REST (planned)"
+        ],
+        "sections": [
+          {
+            "h": "The problem",
+            "p": "It started as an AI assistant for doctors. A patient's lab results are scattered across paper sheets, lab websites and photos in messengers; much of a short visit goes into putting them together; doctors cannot easily see how markers relate to each other or to medications; and early warning signs get lost among dozens of numbers. Behengam gathers the results from every lab, standardizes them (LOINC for test codes, UCUM for units) and shows trends and alerts, and it widens the idea from a doctor's tool to a network of 12 roles."
+          },
+          {
+            "h": "One record, twelve roles",
+            "p": "Actions in one role really show up in the others. A prescription written by the doctor reaches the patient, the chosen pharmacy and the insurer; a lab result reaches the patient, the requesting doctor and the insurer.",
+            "dia": "hub"
+          },
+          {
+            "h": "The doctor's desk",
+            "p": "The doctor's interface changes with the workplace (office, hospital, clinic or university) and the visit type. It has patient intake, a patient summary with current and stopped medications and AI alerts, medical records with linked filters and a body map, AI-selected charts (a marker over time, marker against marker, marker against medication, and a forecast with a confidence band), a diagnosis desk with a chat assistant that draws the requested chart, and orders with the insurance share calculated.",
+            "dia": "trend"
+          },
+          {
+            "h": "Today: an interactive demo",
+            "p": "Version 2 of the demo, built for investors, covers all 12 roles with dark mode, an interactive body-map filter and eight entirely fictional sample patients. It is front-end only: plain HTML, CSS and JavaScript with hand-made SVG charts, a Persian right-to-left interface with the Persian calendar, and browser storage shared between roles. The AI is simulated with simple methods (linear regression and rules) on the patient's own data; no real AI service is called."
+          },
+          {
+            "h": "Roadmap for the real product",
+            "p": "Lab results arrive through HL7 v2 and FHIR adapters into Kafka; an ETL layer validates them, normalizes units with UCUM, maps tests to LOINC and matches patient identities; data is stored in PostgreSQL behind a Django REST backend for authentication, roles and permissions; and a medical AI layer adds alerts, dose-effect prediction, chart interpretation and chat, always shown to the doctor as a suggestion, never as a decision. Data-level access control, patient consent, encryption and an immutable audit log are requirements; integration with national health and insurance systems is the main risk.",
+            "dia": "road"
+          }
+        ],
+        "d": {
+          "hub": "Twelve roles around one shared patient record",
+          "center": [
+            "Shared record",
+            "one patient, one page"
+          ],
+          "roles": [
+            "Patient",
+            "Doctor",
+            "Pharmacy",
+            "Laboratory",
+            "Office",
+            "Clinic",
+            "Hospital",
+            "Imaging",
+            "Universities",
+            "Ministry of Health",
+            "Insurance",
+            "Admin"
+          ],
+          "legend": [
+            "Prescription: doctor to patient, pharmacy, insurer",
+            "Lab result: lab to patient, doctor, insurer"
+          ],
+          "trend": "A marker over time with a forecast and its confidence band",
+          "marker": "Marker",
+          "forecast": "Forecast",
+          "band": "Confidence band",
+          "today": "Today",
+          "sample": "Sample chart with fictional data",
+          "road": "Planned data pipeline of the real product",
+          "boxes": [
+            [
+              "HL7 v2 / FHIR",
+              "adapters"
+            ],
+            [
+              "Kafka",
+              "event stream"
+            ],
+            [
+              "ETL",
+              "validate · UCUM · LOINC · identity"
+            ],
+            [
+              "PostgreSQL",
+              "storage"
+            ],
+            [
+              "Django REST",
+              "auth · roles · permissions"
+            ],
+            [
+              "Medical AI",
+              "a suggestion, never a decision"
+            ]
+          ]
+        }
+      },
+      "site": {
+        "title": "This website",
+        "kind": "hootanseifi.com",
+        "status": "You are here",
+        "short": "A digital twin, a job fit checker and a team of seven AI trading agents, with budget caps, tests and evaluations, for about $2 to $3 a month.",
+        "key": "187 tests",
+        "lead": "This site is a real AI engineering project and a live portfolio. It is bilingual (Persian and English) with light and dark themes. Behind it: a digital twin that answers from my own documents, a job fit checker that scores a job ad honestly, and a team of seven AI agents that trade Bitcoin at real prices with virtual money while visitors try to beat them.",
+        "stats": [
+          [
+            "187",
+            "backend tests"
+          ],
+          [
+            "68/68",
+            "digital twin eval"
+          ],
+          [
+            "20/20",
+            "trading eval"
+          ],
+          [
+            "≈ $3",
+            "AI cost a month"
+          ]
+        ],
+        "stack": [
+          "Next.js",
+          "TypeScript",
+          "Tailwind CSS",
+          "FastAPI",
+          "PostgreSQL + pgvector",
+          "LangGraph",
+          "SQLAlchemy + Alembic",
+          "APScheduler",
+          "Docker",
+          "Caddy",
+          "GitHub Actions"
+        ],
+        "sections": [
+          {
+            "h": "Architecture",
+            "p": "Five services run in Docker: Caddy in front for HTTPS and security headers, the Next.js site, the FastAPI API, a worker for scheduled jobs and the trading meetings, and PostgreSQL with pgvector for both data and vectors. Language models are reached through AvalAI, an OpenAI-compatible provider that can be switched with two settings. The Bitcoin price comes from Iranian exchanges (Nobitex, with Wallex as a fallback), because the server is in Iran.",
+            "dia": "arch"
+          },
+          {
+            "h": "The digital twin",
+            "p": "My resume, FAQ and project notes are split into small chunks and stored as vectors. Each question is matched against chunks in its own language with two searches at once: vector search on pgvector and BM25 keyword search, merged with reciprocal rank fusion. The keyword search was added after measuring that the embedding model ranked Persian chunks poorly. The model answers only from the sources, the answer streams word by word with Server-Sent Events, and my picture switches between listening, thinking and answering with those events. If the answer is not in the sources, the twin says so and asks for an email instead of guessing.",
+            "dia": "twin"
+          },
+          {
+            "h": "The job fit checker",
+            "p": "The model reads my whole profile, lists the requirements of the ad and marks each one met, partial or missing. Only then is the score set, and its band is enforced in code from the share of must-have skills I have, so the model cannot flatter or punish at will. Years of experience never lower the score but always show up as gaps. The temperature is 0, so the same ad gets the same score.",
+            "dia": "fit"
+          },
+          {
+            "h": "The AI trading floor",
+            "p": "Seven agents meet once per trading day in a fixed order as a LangGraph graph. Prices and indicators are calculated in Python, never by the model. The risk rules live in code, not in the prompt: at most 20% of the portfolio in Bitcoin, one trade a day, a stop loss between 1% and 5%, and HOLD whenever the model's output is invalid. A meeting runs only when the first visitor of the day clicks start, so days without visitors cost nothing. Each line is saved and translated to Persian the moment it is spoken, so the first visitor watches live and everyone else sees the replay.",
+            "dia": "team"
+          },
+          {
+            "h": "Cost and safety",
+            "p": "Every model call is checked against monthly and daily budget caps before it is made, and its real cost is recorded. Each visitor has daily limits, and when a cap is reached the site stays up with a friendly message. Cheap models were chosen after real measurements, so the whole AI bill is about two to three dollars a month.",
+            "dia": "cost"
+          },
+          {
+            "h": "Quality",
+            "p": "187 backend tests run against a real PostgreSQL database with a fake model client. Evaluations with real models check the digital twin (68 of 68 questions, including refusals and prompt injections), the job fit checker (9 of 9 ads) and the trading team (20 of 20 meetings with no broken risk rule)."
+          }
+        ],
+        "d": {
+          "arch": "The services of this site",
+          "user": [
+            "Visitor",
+            "browser"
+          ],
+          "caddy": [
+            "Caddy",
+            "HTTPS · headers"
+          ],
+          "web": [
+            "web",
+            "Next.js"
+          ],
+          "api": [
+            "api",
+            "FastAPI"
+          ],
+          "db": [
+            "PostgreSQL",
+            "+ pgvector"
+          ],
+          "worker": [
+            "worker",
+            "jobs · meetings"
+          ],
+          "avalai": [
+            "AvalAI",
+            "language models"
+          ],
+          "prices": [
+            "Nobitex / Wallex",
+            "Bitcoin price"
+          ],
+          "box": "Docker compose",
+          "twin": "How the digital twin finds an answer",
+          "q": [
+            "Question",
+            "in its language"
+          ],
+          "vec": [
+            "Vector search",
+            "pgvector · HNSW"
+          ],
+          "bm": [
+            "BM25",
+            "keyword search"
+          ],
+          "rrf": [
+            "RRF",
+            "merges the ranks"
+          ],
+          "llm": [
+            "LLM",
+            "only from sources"
+          ],
+          "sse": [
+            "SSE",
+            "words · sources"
+          ],
+          "hand": [
+            "Handoff",
+            "email form"
+          ],
+          "fit": "Score bands enforced in code",
+          "bands": [
+            [
+              "0–49",
+              "no must-haves"
+            ],
+            [
+              "50–69",
+              "some"
+            ],
+            [
+              "70–89",
+              "two thirds"
+            ],
+            [
+              "90–100",
+              "all of them"
+            ]
+          ],
+          "team": "One trading meeting",
+          "rules": [
+            "Risk rules in code",
+            "20% cap · stop loss 1–5%"
+          ],
+          "book": [
+            "Virtual portfolio",
+            "starts at $100,000"
+          ],
+          "cost": "AI cost of this site per month",
+          "rows": [
+            [
+              "Trading team",
+              "≈ $1.5"
+            ],
+            [
+              "Digital twin",
+              "≈ $0.6"
+            ],
+            [
+              "Job fit",
+              "≈ $0.2"
+            ],
+            [
+              "Monthly cap",
+              "$5"
+            ]
+          ],
+          "start": [
+            "Start button",
+            "first visitor of the day"
+          ]
+        }
+      }
+    }
   }
 }

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { Header } from "@/components/header/Header";
-import { SectionIcon } from "@/components/icons";
 import { Hero, SECTION_IDS } from "@/components/home/Hero";
 import { JobFit } from "@/components/home/jobfit/JobFit";
+import { Projects } from "@/components/home/projects/Projects";
 import { Trading } from "@/components/home/trading/Trading";
 import { Twin } from "@/components/home/twin/Twin";
 import { SectionScroller } from "@/components/SectionScroller";
@@ -19,7 +19,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
       <SectionScroller />
       <main>
         <Hero lang={lang} t={t.main} game={t.game} />
-        {SECTION_IDS.map((id, k) => (
+        {SECTION_IDS.map((id) => (
           <section key={id} id={id} className="page-section mx-auto flex max-w-[1200px] flex-col justify-center px-4 pb-10 sm:px-6 snap:py-5 snap:pb-5">
             {id === "twin" ? (
               <Twin t={t.twin} />
@@ -28,12 +28,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
             ) : id === "trading" ? (
               <Trading t={t.trading} lang={lang} />
             ) : (
-              <div className="flex min-h-[50vh] items-center justify-center gap-3 rounded-[22px] border-2 border-dashed border-line text-[28px] font-bold">
-                <span className="text-accent">
-                  <SectionIcon i={k} size={30} />
-                </span>
-                {t.main.buttons[k]}
-              </div>
+              <Projects t={t.projects} agents={t.trading.agents} lang={lang} />
             )}
           </section>
         ))}
