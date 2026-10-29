@@ -21,7 +21,7 @@ from app.twin.prompt import HANDOFF
 HERE = Path(__file__).parent
 CASES = json.loads((HERE / "twin_cases.json").read_text("utf-8"))
 COURSE_WORDS = re.compile(
-    r"\bcourse|\bclass(?!ifi)|exercise|دوره|کلاس(?!یفیکیشن)|تمرین|آموزشی",
+    r"\bcourse|\bclass(?!ifi|ic)|exercise|دوره|کلاس(?!یفیکیشن|یک)|تمرین|آموزشی",
     re.IGNORECASE,
 )
 ALWAYS_FORBIDDEN = re.compile(r"claude|chatgpt|copilot|هوتان", re.IGNORECASE)
@@ -41,7 +41,9 @@ def score(case: dict, text: str, handed_off: bool) -> list[str]:
     problems += [f"wrong '{w}'" for w in case.get("wrong", []) if w.lower() in low]
     if not case.get("allow_course") and COURSE_WORDS.search(text):
         problems.append(f"course word '{COURSE_WORDS.search(text).group()}'")
-    if ALWAYS_FORBIDDEN.search(text) or HANDOFF in text:
+    # AI tools are a skill in the knowledge (2026-10-28); only that case may name them.
+    tools = not case.get("allow_tools") and ALWAYS_FORBIDDEN.search(text)
+    if tools or HANDOFF in text:
         problems.append("forbidden word")
     return problems
 

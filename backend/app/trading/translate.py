@@ -15,8 +15,8 @@ from app.llm.budget import BudgetExceeded
 from app.llm.client import LLMClient
 
 MAX_TOKENS = 400
-# A healthy reply takes under 3 seconds; AvalAI connections sometimes hang for 20 to
-# 30 seconds (probe, 2026-10-29), so a hung call is dropped early and retried.
+# A healthy reply takes under 3 seconds; a bad route (a VPN on the machine, probe
+# 2026-10-29) can hang a call for 20 to 30 seconds, so it is dropped early and retried.
 TIMEOUT = 10
 SYSTEM = (
     "You translate lines of an AI trading team's meeting into fluent, natural "
