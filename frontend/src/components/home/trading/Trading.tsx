@@ -138,7 +138,7 @@ export function Trading({
         <div className="flex min-h-0 flex-col gap-3">
           {/* On one-screen layouts the building fills the free height; the sides (trees, sky) get cropped, the windows never. */}
           <a
-            href={`/${lang}/trading`}
+            href="#play"
             dir="ltr"
             className="relative block aspect-[1672/941] w-full overflow-hidden rounded-[20px] border-2 border-line bg-paper shadow-[5px_5px_0_var(--line)] snap:aspect-auto snap:min-h-0 snap:flex-1 snap:[container-type:size]"
           >
@@ -184,7 +184,7 @@ export function Trading({
               <b className="text-[16px]">{t.ch3}:</b> {t.you}
             </p>
             <a
-              href={`/${lang}/trading`}
+              href="#play"
               className="btn inline-flex min-h-[44px] items-center self-start rounded-full border-[1.5px] border-line bg-orange px-5 text-[15px] font-bold text-[#1e1c1a] no-underline"
             >
               {t.play}

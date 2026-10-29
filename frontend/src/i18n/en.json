@@ -16,6 +16,7 @@
       "Interview my digital twin",
       "How well I fit your job ad",
       "My AI trading agents",
+      "Play against my AI team",
       "Projects",
       "How I built this site"
     ],
@@ -23,6 +24,7 @@
       "Ask my twin anything about my work.",
       "Paste your job ad; get an honest score with strengths and gaps.",
       "Seven agents meet every day. See if you can beat them.",
+      "Predict Bitcoin for 9 a.m. tomorrow and climb the leaderboard.",
       "Things I've built, from idea to production.",
       "Architecture, decisions and the monthly bill of this very site."
     ]
@@ -220,6 +222,31 @@
     "todayTitle": "Today's meeting",
     "liveTitle": "live",
     "error": "The meeting could not start. Please try again a bit later."
+  },
+  "play": {
+    "tag": "the game",
+    "h2": "Can you beat my AI team?",
+    "sub": "A daily Bitcoin prediction game with virtual money. The leaderboard ranks everyone, the AI team included, by percentage return.",
+    "rules": [
+      [
+        "100,000 virtual dollars",
+        "Pick a nickname and get the same starting money as the AI team. No email, no sign-up."
+      ],
+      [
+        "Up or down?",
+        "Each day, predict whether Bitcoin will be higher or lower at 9 a.m. tomorrow than it is right now."
+      ],
+      [
+        "Choose your stake",
+        "Put 10% to 100% of your balance on it. Profit or loss follows the real price change; under 0.2% is a draw."
+      ],
+      [
+        "Beat the AI, double it",
+        "If you are right and the AI team was wrong, that day's profit is doubled. A loss is never doubled."
+      ]
+    ],
+    "soon": "The prediction box and the leaderboard are built here in the next step.",
+    "virtual": "Virtual money only. Not financial advice."
   },
   "projects": {
     "tag": "things I've built",

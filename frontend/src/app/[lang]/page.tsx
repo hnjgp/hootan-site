@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/header/Header";
 import { Hero, SECTION_IDS } from "@/components/home/Hero";
 import { JobFit } from "@/components/home/jobfit/JobFit";
+import { Play } from "@/components/home/play/Play";
 import { Projects } from "@/components/home/projects/Projects";
 import { Trading } from "@/components/home/trading/Trading";
 import { Twin } from "@/components/home/twin/Twin";
@@ -27,6 +28,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
               <JobFit t={t.jobfit} lang={lang} />
             ) : id === "trading" ? (
               <Trading t={t.trading} lang={lang} />
+            ) : id === "play" ? (
+              <Play t={t.play} />
             ) : (
               <Projects t={t.projects} agents={t.trading.agents} lang={lang} />
             )}
