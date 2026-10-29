@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.db.models import Player, Prediction
 from app.db.session import get_session
-from app.game.leaderboard import Period, leaderboard
+from app.game.leaderboard import Period, ai_row, leaderboard, player_rows
 from app.game.nickname import nickname_error
 from app.game.players import (
     current_player,
@@ -22,6 +22,7 @@ from app.game.players import (
     require_player,
 )
 from app.game.scoring import stake_usd, streak
+from app.game.stats import players_ahead, recent_trades, team_accuracy
 from app.market.prices import PriceUnavailable, fetch_btc_price, make_client
 from app.security.cookie import set_player_cookie
 from app.security.rate_limit import RateLimiter
@@ -197,3 +198,27 @@ async def get_leaderboard(
     """Best percent return first; players appear after 3 settled predictions."""
     rows = await leaderboard(session, period, datetime.now(UTC))
     return {"period": period, "rows": rows}
+
+
+@router.get("/price")
+async def price_now(price: Annotated[Decimal, Depends(live_price)]) -> dict:
+    """The BTC price a prediction made now would use as its reference."""
+    return {"price": price}
+
+
+@router.get("/stats")
+async def get_stats(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict:
+    """Team accuracy this season, players ahead of the team this month, team trades."""
+    now = datetime.now(UTC)
+    right, decided = await team_accuracy(session, now)
+    rows = await player_rows(session, "month", now)
+    ahead, players = players_ahead(rows + [await ai_row(session, "month", now)])
+    return {
+        "accuracy_pct": round(right / decided * 100) if decided else None,
+        "decided": decided,
+        "ahead_pct": round(ahead / players * 100) if players else None,
+        "players": players,
+        "trades": await recent_trades(session),
+    }

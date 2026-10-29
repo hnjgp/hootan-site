@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 
 import httpx2
@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.db.models import (
     MarketPrice,
     Player,
+    PortfolioTrade,
     Prediction,
     SessionEvent,
     TradingSession,
@@ -17,6 +18,7 @@ from app.db.session import get_session
 from app.game.api import NICKNAME_LIMITER, PREDICTION_LIMITER, live_price
 from app.game.season import season_day
 from app.game.settle import settle_predictions
+from app.llm.budget import TEHRAN
 from app.main import app
 from app.security.cookie import sign
 from app.trading.run import trading_day
@@ -298,3 +300,52 @@ async def test_full_game_day(api, session):
     board = (await api.get("/api/game/leaderboard", params={"period": "all"})).json()
     assert board["rows"][0]["nickname"] == "satoshi"
     assert board["rows"][0]["return_pct"] == 2.0
+
+
+async def test_price_is_the_live_reference_price(api):
+    response = await api.get("/api/game/price")
+    assert Decimal(response.json()["price"]) == PRICE
+
+
+async def test_stats_judge_the_team_like_a_prediction(api, session):
+    """BUY then a rise is right, SELL then a rise is wrong; HOLD and open days do not count."""
+    start = season_day(NOW)
+    for k, decision in enumerate(["BUY", "SELL", "HOLD", "BUY"]):
+        session.add(
+            TradingSession(
+                session_date=start + timedelta(days=k),
+                status="done",
+                decision=decision,
+                price=PRICE,
+            )
+        )
+    for k in (1, 2):
+        nine = datetime.combine(start + timedelta(days=k), time(9), TEHRAN)
+        session.add(MarketPrice(ts=nine, symbol="BTCUSDT", price=81_000, source="test"))
+    session.add(
+        PortfolioTrade(side="BUY", qty=Decimal("0.1"), price=PRICE, reason="test")
+    )
+    await ranked_player(session, "dana", 110_000, [1_000, 4_000, 5_000], start)
+    await ranked_player(session, "erin", 95_000, [-5_000, 0, 0], start)
+    await session.commit()
+
+    stats = (await api.get("/api/game/stats")).json()
+
+    assert stats["accuracy_pct"] == 50
+    assert stats["decided"] == 2
+    assert stats["players"] == 2
+    assert stats["ahead_pct"] == 50
+    assert [(t["side"], Decimal(t["price"])) for t in stats["trades"]] == [
+        ("BUY", PRICE)
+    ]
+
+
+async def test_stats_without_players_or_judged_days(api, session):
+    session.add(MarketPrice(ts=NOW, symbol="BTCUSDT", price=PRICE, source="test"))
+    await session.commit()
+
+    stats = (await api.get("/api/game/stats")).json()
+
+    assert stats["accuracy_pct"] is None
+    assert stats["ahead_pct"] is None
+    assert stats["trades"] == []

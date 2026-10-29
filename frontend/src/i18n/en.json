@@ -226,27 +226,79 @@
   "play": {
     "tag": "the game",
     "h2": "Can you beat my AI team?",
-    "sub": "A daily Bitcoin prediction game with virtual money. The leaderboard ranks everyone, the AI team included, by percentage return.",
+    "sub": "A daily Bitcoin prediction game with virtual money. Everyone, the AI team included, shares one leaderboard ranked by percentage return.",
+    "rulesTitle": "How it works",
     "rules": [
-      [
-        "100,000 virtual dollars",
-        "Pick a nickname and get the same starting money as the AI team. No email, no sign-up."
-      ],
-      [
-        "Up or down?",
-        "Each day, predict whether Bitcoin will be higher or lower at 9 a.m. tomorrow than it is right now."
-      ],
-      [
-        "Choose your stake",
-        "Put 10% to 100% of your balance on it. Profit or loss follows the real price change; under 0.2% is a draw."
-      ],
-      [
-        "Beat the AI, double it",
-        "If you are right and the AI team was wrong, that day's profit is doubled. A loss is never doubled."
-      ]
+      "Pick a nickname and get 100,000 virtual dollars. No sign-up.",
+      "Each day, say whether Bitcoin will be higher or lower at 9 a.m. tomorrow.",
+      "Stake 10% to 100% of your balance; a move under 0.2% is a draw.",
+      "If you are right and the AI team is wrong, that day's profit doubles."
     ],
-    "soon": "The prediction box and the leaderboard are built here in the next step.",
-    "virtual": "Virtual money only. Not financial advice."
+    "virtual": "Virtual money only. Not financial advice.",
+    "yourMove": "Your move",
+    "nickname": "Nickname",
+    "nicknameHint": "3 to 20 letters or digits; _ and . are fine too.",
+    "join": "Start with $100,000",
+    "errTaken": "Someone already took that name. Try another one.",
+    "errBad": "That name won't work: 3 to 20 letters or digits, no spaces.",
+    "errLimit": "Enough players were made from this network today. Try again tomorrow.",
+    "errOther": "Something went wrong. Please try again in a moment.",
+    "errPrice": "The live price is unavailable right now. Try again in a few minutes.",
+    "recoverTitle": "Your recovery link",
+    "recoverText": "This link is shown only once. Keep it to be the same player on another device.",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "gotIt": "Saved it",
+    "wallet": "Balance",
+    "streak": "Wins in a row",
+    "teamToday": "Team today",
+    "teamNone": "No meeting yet, so no double bonus today.",
+    "teamHold": "No double bonus today.",
+    "bonus": "Say \"{dir}\" and be right: double profit.",
+    "decisions": {
+      "BUY": "Buy",
+      "SELL": "Sell",
+      "HOLD": "Hold"
+    },
+    "question": "At 9 a.m. tomorrow, Bitcoin vs now:",
+    "up": "Higher",
+    "down": "Lower",
+    "stake": "Your stake",
+    "submit": "Place prediction",
+    "today": "Your prediction today",
+    "todayLine": "\"{dir}\" with {stake} from {price}",
+    "resultAt": "The result comes in at 9 a.m. tomorrow.",
+    "last": "Last result",
+    "results": {
+      "win": "Win",
+      "lose": "Loss",
+      "draw": "Draw"
+    },
+    "stats": {
+      "team": "Team return",
+      "hold": "Just holding",
+      "accuracy": "Team accuracy this month",
+      "ahead": "Players ahead of the team",
+      "none": "Not yet"
+    },
+    "chartTitle": "Bitcoin price",
+    "ranges": {
+      "24h": "24 hours",
+      "7d": "7 days",
+      "season": "This month"
+    },
+    "buy": "Team buy",
+    "sell": "Team sell",
+    "noData": "No data yet.",
+    "boardTitle": "Leaderboard",
+    "month": "This month",
+    "all": "All time",
+    "ai": "AI Trading Team",
+    "you": "you",
+    "entry": "You join the table after 3 settled predictions.",
+    "recovering": "Bringing your player back…",
+    "recoverFail": "This recovery link is not valid.",
+    "back": "Back to the game"
   },
   "projects": {
     "tag": "things I've built",

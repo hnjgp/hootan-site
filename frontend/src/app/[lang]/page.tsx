@@ -29,7 +29,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
             ) : id === "trading" ? (
               <Trading t={t.trading} lang={lang} />
             ) : id === "play" ? (
-              <Play t={t.play} />
+              <Play t={t.play} lang={lang} />
             ) : (
               <Projects t={t.projects} agents={t.trading.agents} lang={lang} />
             )}
