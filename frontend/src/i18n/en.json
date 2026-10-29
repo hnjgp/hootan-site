@@ -585,8 +585,8 @@
             "dia": "agents"
           },
           {
-            "h": "Origin, and the engineering I added",
-            "p": "The problem and its original notebooks come from the capstone of an open, MIT-licensed LLM engineering course, credited in the repository. I rebuilt it as an installable, tested Python package: settings from .env, learned ensemble weights, normalization constants saved inside the neural network checkpoint, fixes for bugs that crashed the parser and the file upload, a FastAPI /predict endpoint, a pricing tab in the Gradio dashboard, my own QLoRA training script, and an offline test suite with fakes for every LLM and API, checked by ruff and GitHub Actions."
+            "h": "The engineering behind it",
+            "p": "Everything lives in one installable, tested Python package instead of notebooks: settings from .env, learned ensemble weights, normalization constants saved inside the neural network checkpoint so a retrained model never gives silently wrong prices, fixes for bugs that crashed the parser and the file upload, a FastAPI /predict endpoint, a pricing tab in the Gradio dashboard, my own QLoRA training script with Hugging Face TRL, and an offline test suite with fakes for every LLM and API, checked by ruff and GitHub Actions."
           }
         ],
         "d": {
