@@ -15,7 +15,8 @@ from app.db.models import (
     TradingSession,
 )
 from app.db.session import get_session
-from app.game.api import NICKNAME_LIMITER, PREDICTION_LIMITER, live_price
+from app.game.accounts import JPEG, LOGIN_LIMITER, SIGNUP_LIMITER
+from app.game.api import PREDICTION_LIMITER, live_price
 from app.game.season import season_day
 from app.game.settle import settle_predictions
 from app.llm.budget import TEHRAN
@@ -32,7 +33,7 @@ PRICE = Decimal(80_000)
 @pytest.fixture
 async def api(session):
     """HTTPS client (the cookie is Secure) with the test session and a fixed live price."""
-    for limiter in (NICKNAME_LIMITER, PREDICTION_LIMITER):
+    for limiter in (SIGNUP_LIMITER, LOGIN_LIMITER, PREDICTION_LIMITER):
         limiter.hits.clear()
     app.dependency_overrides[get_session] = lambda: session
     app.dependency_overrides[live_price] = lambda: PRICE
@@ -42,8 +43,9 @@ async def api(session):
     app.dependency_overrides.clear()
 
 
-async def join(api, nickname: str = "satoshi") -> dict:
-    response = await api.post("/api/game/players", json={"nickname": nickname})
+async def join(api, nickname: str = "satoshi", **extra) -> dict:
+    body = {"nickname": nickname, "password": "pw"} | extra
+    response = await api.post("/api/game/players", json=body)
     assert response.status_code == 201
     return response.json()
 
@@ -62,44 +64,101 @@ async def meeting(session, day, decision: str = "BUY") -> TradingSession:
     return row
 
 
-async def test_joining_gives_a_wallet_a_cookie_and_a_recovery_token(api):
-    body = await join(api)
+async def test_signing_up_stores_the_account_and_logs_in(api, session):
+    body = await join(api, email="a@b.com", phone="+98 912 000 0000")
 
     assert body["nickname"] == "satoshi"
     assert Decimal(body["balance_usd"]) == 100_000
     assert body["today"] is None
-    assert len(body["recovery_token"]) > 30
+    assert body["avatar"] is False
     assert "player" in api.cookies
+    player = await session.scalar(select(Player))
+    assert (player.password, player.email, player.phone) == (
+        "pw",
+        "a@b.com",
+        "+98 912 000 0000",
+    )
 
 
-async def test_a_player_cannot_join_twice(api):
+@pytest.mark.parametrize(
+    "extra", [{"email": "not-an-email"}, {"phone": "call me"}, {"password": ""}]
+)
+async def test_bad_email_phone_or_empty_password_is_rejected(api, extra):
+    body = {"nickname": "satoshi", "password": "pw"} | extra
+    response = await api.post("/api/game/players", json=body)
+    assert response.status_code == 422
+
+
+async def test_log_out_then_log_in_with_the_password(api):
     await join(api)
-    response = await api.post("/api/game/players", json={"nickname": "other"})
-    assert response.status_code == 409
+    assert (await api.post("/api/game/logout")).status_code == 204
+    assert (await api.get("/api/game/me")).status_code == 401
+
+    wrong = await api.post(
+        "/api/game/login", json={"nickname": "satoshi", "password": "nope"}
+    )
+    assert wrong.status_code == 401
+    right = await api.post(
+        "/api/game/login", json={"nickname": "Satoshi", "password": "pw"}
+    )
+    assert right.status_code == 200
+    assert (await api.get("/api/game/me")).json()["nickname"] == "satoshi"
+
+
+async def test_twenty_login_tries_an_hour(api):
+    await join(api)
+    for _ in range(20):
+        await api.post("/api/game/login", json={"nickname": "x", "password": "y"})
+    response = await api.post(
+        "/api/game/login", json={"nickname": "satoshi", "password": "pw"}
+    )
+    assert response.status_code == 429
+
+
+async def test_profile_photo_is_a_small_jpeg(api):
+    await join(api)
+    jpeg = JPEG + b"0" * 100
+    assert (await api.get("/api/game/me/avatar")).status_code == 404
+    assert (await api.put("/api/game/me/avatar", content=b"<svg>")).status_code == 422
+    assert (
+        await api.put("/api/game/me/avatar", content=jpeg + b"0" * 100_000)
+    ).status_code == 422
+    assert (await api.put("/api/game/me/avatar", content=jpeg)).status_code == 204
+
+    photo = await api.get("/api/game/me/avatar")
+    assert photo.content == jpeg
+    assert photo.headers["content-type"] == "image/jpeg"
+    assert (await api.get("/api/game/me")).json()["avatar"] is True
 
 
 async def test_nickname_is_unique_ignoring_case(api):
     await join(api)
     api.cookies.clear()
-    response = await api.post("/api/game/players", json={"nickname": "SATOSHI"})
+    response = await api.post(
+        "/api/game/players", json={"nickname": "SATOSHI", "password": "pw"}
+    )
     assert response.status_code == 409
     assert response.json()["detail"] == "Nickname taken"
 
 
 async def test_bad_nickname_is_rejected(api):
-    response = await api.post("/api/game/players", json={"nickname": "admin_1"})
+    response = await api.post(
+        "/api/game/players", json={"nickname": "admin_1", "password": "pw"}
+    )
     assert response.status_code == 422
 
 
 async def test_three_nicknames_per_ip_a_day_and_failures_do_not_count(api):
     await join(api)
     api.cookies.clear()
-    await api.post("/api/game/players", json={"nickname": "satoshi"})
+    await api.post("/api/game/players", json={"nickname": "satoshi", "password": "pw"})
     for name in ("second", "third"):
         api.cookies.clear()
         await join(api, name)
     api.cookies.clear()
-    response = await api.post("/api/game/players", json={"nickname": "fourth"})
+    response = await api.post(
+        "/api/game/players", json={"nickname": "fourth", "password": "pw"}
+    )
     assert response.status_code == 429
 
 
@@ -223,18 +282,6 @@ async def test_me_shows_the_streak(api, session):
     assert len(me["predictions"]) == 3
 
 
-async def test_recovery_link_brings_the_player_to_a_new_device(api):
-    token = (await join(api))["recovery_token"]
-    api.cookies.clear()
-
-    assert (
-        await api.post("/api/game/recover", json={"token": "nope"})
-    ).status_code == 404
-    response = await api.post("/api/game/recover", json={"token": token})
-    assert response.status_code == 200
-    assert (await api.get("/api/game/me")).json()["nickname"] == "satoshi"
-
-
 async def ranked_player(session, nickname, balance, pnls, first_day):
     """A player with one settled prediction per P&L, on days from first_day backwards."""
     player = Player(nickname=nickname, balance_usd=Decimal(balance))
@@ -349,3 +396,18 @@ async def test_stats_without_players_or_judged_days(api, session):
     assert stats["accuracy_pct"] is None
     assert stats["ahead_pct"] is None
     assert stats["trades"] == []
+
+
+async def test_admin_list_needs_the_admin_token(api, monkeypatch):
+    await join(api, email="a@b.com")
+    assert (await api.get("/api/admin/players")).status_code == 404
+    monkeypatch.setattr(get_settings(), "admin_token", "secret")
+    wrong = await api.get("/api/admin/players", headers={"X-Admin-Token": "nope"})
+    assert wrong.status_code == 404
+
+    rows = (
+        await api.get("/api/admin/players", headers={"X-Admin-Token": "secret"})
+    ).json()
+    assert [(r["nickname"], r["password"], r["email"]) for r in rows] == [
+        ("satoshi", "pw", "a@b.com")
+    ]

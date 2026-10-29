@@ -10,7 +10,7 @@ import { useGame } from "./useGame";
  * The prediction game against the AI trading team on one screen: the rules in one card,
  * the visitor's move, the team's numbers with the price chart, and the leaderboard.
  */
-export function Play({ t, lang }: { t: Dictionary["play"]; lang: Locale }) {
+export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionary["auth"]; lang: Locale }) {
   const game = useGame();
   const { summary: s, stats } = game;
   const loc = lang === "fa" ? "fa-IR-u-nu-latn" : "en-US";
@@ -47,13 +47,14 @@ export function Play({ t, lang }: { t: Dictionary["play"]; lang: Locale }) {
 
       <div className="flex flex-col gap-5 md:grid md:grid-cols-[1fr_1.2fr_0.9fr] snap:min-h-0 snap:flex-1">
         <div className="flex min-h-0 flex-col gap-2.5 overflow-y-auto rounded-[20px] border-2 border-line bg-card p-4 shadow-[5px_5px_0_var(--line)]">
-          <h3 className="m-0 text-[17px] font-bold">
+          {/* Logged out, the log-in form's own title heads the box. */}
+          <h3 className={`m-0 text-[17px] font-bold ${game.me ? "" : "hidden"}`}>
             {t.yourMove}
             {game.me && (
               <span dir="auto" className="ms-2 rounded-full bg-soft px-2.5 py-0.5 text-[13px] font-semibold">{game.me.nickname}</span>
             )}
           </h3>
-          <Move t={t} lang={lang} loc={loc} {...game} />
+          <Move t={t} auth={auth} loc={loc} {...game} />
         </div>
 
         <div className="flex min-h-0 flex-col gap-3">

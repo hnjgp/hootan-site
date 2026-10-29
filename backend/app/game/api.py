@@ -1,53 +1,34 @@
-"""Prediction game endpoints: nickname and wallet, daily prediction, me, recovery
-and leaderboard (CLAUDE.md 4.2 and 4.3). No LLM is called here."""
+"""Prediction game endpoints: daily prediction, me, leaderboard, live price and
+stats (CLAUDE.md 4.2). Accounts are in accounts.py. No LLM is called here."""
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import get_settings
 from app.db.models import Player, Prediction
 from app.db.session import get_session
 from app.game.leaderboard import Period, ai_row, leaderboard, player_rows
-from app.game.nickname import nickname_error
-from app.game.players import (
-    current_player,
-    hash_token,
-    new_recovery_token,
-    require_player,
-)
+from app.game.players import require_player
 from app.game.scoring import stake_usd, streak
 from app.game.stats import players_ahead, recent_trades, team_accuracy
 from app.market.prices import PriceUnavailable, fetch_btc_price, make_client
-from app.security.cookie import set_player_cookie
 from app.security.rate_limit import RateLimiter
-from app.security.visitor import visitor_id
 from app.trading.run import trading_day
 
 router = APIRouter(prefix="/api/game")
 
-# Only successful actions count, so a taken nickname does not use up a try.
-NICKNAME_LIMITER = RateLimiter(3, timedelta(days=1))
 PREDICTION_LIMITER = RateLimiter(5, timedelta(days=1))
 HISTORY = 30
-
-
-class NewPlayer(BaseModel):
-    nickname: str
 
 
 class NewPrediction(BaseModel):
     direction: Literal["up", "down"]
     stake_pct: Annotated[int, Field(ge=10, le=100, multiple_of=10)]
-
-
-class Recovery(BaseModel):
-    token: str
 
 
 async def live_price() -> Decimal:
@@ -92,46 +73,12 @@ async def me_out(session: AsyncSession, player: Player) -> dict:
     today = trading_day(datetime.now(UTC))
     return {
         "nickname": player.nickname,
+        "avatar": player.avatar is not None,
         "balance_usd": player.balance_usd,
         "streak": streak([p.result for p in rows if p.result]),
         "today": next((prediction_out(p) for p in rows if p.game_date == today), None),
         "predictions": [prediction_out(p) for p in rows],
     }
-
-
-@router.post("/players", status_code=201)
-async def create_player(
-    body: NewPlayer,
-    request: Request,
-    response: Response,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    player: Annotated[Player | None, Depends(current_player)],
-) -> dict:
-    """Register a nickname, give a 100,000 USD wallet and set the signed cookie.
-
-    The recovery token is shown once; only its hash is stored.
-    """
-    if player is not None:
-        raise HTTPException(status_code=409, detail="Already playing")
-    if error := nickname_error(body.nickname):
-        raise HTTPException(status_code=422, detail=error)
-    taken = await session.scalar(
-        select(Player.id).where(func.lower(Player.nickname) == body.nickname.lower())
-    )
-    if taken:
-        raise HTTPException(status_code=409, detail="Nickname taken")
-    check_limit(NICKNAME_LIMITER, request)
-    token, token_hash = new_recovery_token()
-    settings = get_settings()
-    player = Player(
-        nickname=body.nickname,
-        recovery_token_hash=token_hash,
-        created_ip_hash=visitor_id(request, settings),
-    )
-    session.add(player)
-    await session.commit()
-    set_player_cookie(response, player.id, settings)
-    return await me_out(session, player) | {"recovery_token": token}
 
 
 @router.post("/predictions", status_code=201)
@@ -171,22 +118,6 @@ async def me(
     player: Annotated[Player, Depends(require_player)],
 ) -> dict:
     """The current player's wallet and predictions."""
-    return await me_out(session, player)
-
-
-@router.post("/recover")
-async def recover(
-    body: Recovery,
-    response: Response,
-    session: Annotated[AsyncSession, Depends(get_session)],
-) -> dict:
-    """Bring a player to this device with the token from the recovery link."""
-    player = await session.scalar(
-        select(Player).where(Player.recovery_token_hash == hash_token(body.token))
-    )
-    if player is None:
-        raise HTTPException(status_code=404, detail="Unknown recovery link")
-    set_player_cookie(response, player.id, get_settings())
     return await me_out(session, player)
 
 

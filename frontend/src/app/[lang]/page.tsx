@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Header } from "@/components/header/Header";
 import { Hero, SECTION_IDS } from "@/components/home/Hero";
 import { JobFit } from "@/components/home/jobfit/JobFit";
@@ -15,8 +16,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
   const t = getDictionary(lang);
 
   return (
-    <>
-      <Header lang={lang} t={t.header} />
+    <AuthProvider>
+      <Header lang={lang} t={t.header} auth={t.auth} />
       <SectionScroller />
       <main>
         <Hero lang={lang} t={t.main} game={t.game} />
@@ -29,13 +30,13 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
             ) : id === "trading" ? (
               <Trading t={t.trading} lang={lang} />
             ) : id === "play" ? (
-              <Play t={t.play} lang={lang} />
+              <Play t={t.play} auth={t.auth} lang={lang} />
             ) : (
               <Projects t={t.projects} agents={t.trading.agents} lang={lang} />
             )}
           </section>
         ))}
       </main>
-    </>
+    </AuthProvider>
   );
 }

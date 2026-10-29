@@ -12,6 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     String,
     Text,
@@ -33,7 +34,11 @@ def created_at_column() -> Mapped[datetime]:
 
 
 class Player(Base):
-    """Anonymous player identified by a signed cookie and a nickname; virtual USD wallet."""
+    """A registered player with a virtual USD wallet; the signed cookie says who is logged in.
+
+    The password is stored as typed: Hootan wants to read it in the admin panel
+    (Decision Log 2026-10-30). Email and phone are optional.
+    """
 
     __tablename__ = "players"
 
@@ -42,7 +47,10 @@ class Player(Base):
     balance_usd: Mapped[Decimal] = mapped_column(
         Numeric(18, 2), default=Decimal(100_000), server_default="100000"
     )
-    recovery_token_hash: Mapped[str | None] = mapped_column(String(64))
+    password: Mapped[str | None] = mapped_column(String(128))
+    email: Mapped[str | None] = mapped_column(String(254))
+    phone: Mapped[str | None] = mapped_column(String(20))
+    avatar: Mapped[bytes | None] = mapped_column(LargeBinary)
     created_ip_hash: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = created_at_column()
 

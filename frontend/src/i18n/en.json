@@ -1,6 +1,5 @@
 {
   "header": {
-    "name": "Hootan Seifi",
     "resume": "Download résumé",
     "themeLabel": "Switch light or dark mode",
     "langLabel": "Language",
@@ -229,26 +228,14 @@
     "sub": "A daily Bitcoin prediction game with virtual money. Everyone, the AI team included, shares one leaderboard ranked by percentage return.",
     "rulesTitle": "How it works",
     "rules": [
-      "Pick a nickname and get 100,000 virtual dollars. No sign-up.",
+      "Sign up and get 100,000 virtual dollars.",
       "Each day, say whether Bitcoin will be higher or lower at 9 a.m. tomorrow.",
       "Stake 10% to 100% of your balance; a move under 0.2% is a draw.",
       "If you are right and the AI team is wrong, that day's profit doubles."
     ],
     "virtual": "Virtual money only. Not financial advice.",
     "yourMove": "Your move",
-    "nickname": "Nickname",
-    "nicknameHint": "3 to 20 letters or digits; _ and . are fine too.",
-    "join": "Start with $100,000",
-    "errTaken": "Someone already took that name. Try another one.",
-    "errBad": "That name won't work: 3 to 20 letters or digits, no spaces.",
-    "errLimit": "Enough players were made from this network today. Try again tomorrow.",
-    "errOther": "Something went wrong. Please try again in a moment.",
     "errPrice": "The live price is unavailable right now. Try again in a few minutes.",
-    "recoverTitle": "Your recovery link",
-    "recoverText": "This link is shown only once. Keep it to be the same player on another device.",
-    "copy": "Copy link",
-    "copied": "Copied",
-    "gotIt": "Saved it",
     "wallet": "Balance",
     "streak": "Wins in a row",
     "teamToday": "Team today",
@@ -295,10 +282,7 @@
     "all": "All time",
     "ai": "AI Trading Team",
     "you": "you",
-    "entry": "You join the table after 3 settled predictions.",
-    "recovering": "Bringing your player back…",
-    "recoverFail": "This recovery link is not valid.",
-    "back": "Back to the game"
+    "entry": "You join the table after 3 settled predictions."
   },
   "projects": {
     "tag": "things I've built",
@@ -1071,5 +1055,28 @@
         }
       }
     }
+  },
+  "auth": {
+    "login": "Log in",
+    "signup": "Sign up",
+    "loginTitle": "Log in to join the prediction game",
+    "signupTitle": "Create an account",
+    "nickname": "Username",
+    "nicknameHint": "3 to 20 letters or digits; _ and . are fine too.",
+    "password": "Password",
+    "passwordHint": "Pick a password you don't use anywhere else.",
+    "email": "Email (optional)",
+    "phone": "Phone (optional)",
+    "noAccount": "No account yet?",
+    "haveAccount": "Already have an account?",
+    "logout": "Log out",
+    "photo": "Set profile photo",
+    "account": "Account",
+    "errLogin": "Wrong username or password.",
+    "errTaken": "Someone already took that username. Try another one.",
+    "errBad": "Check the username, email or phone: usernames are 3 to 20 letters or digits, no spaces.",
+    "errLimit": "Too many tries from this network. Please try again later.",
+    "errOther": "Something went wrong. Please try again in a moment.",
+    "errPhoto": "That file is not an image or could not be opened."
   }
 }

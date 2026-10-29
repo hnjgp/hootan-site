@@ -1,84 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import type { Dictionary, Locale } from "@/i18n";
+import type { Dictionary } from "@/i18n";
+import { AuthForm } from "../../auth/AuthForm";
+import type { Failure, Me } from "../../auth/AuthProvider";
 import type { Decision } from "../trading/useMeeting";
-import type { Failure, Me } from "./useGame";
 
 const BONUS_FOR: Partial<Record<Decision, "up" | "down">> = { BUY: "down", SELL: "up" };
 
-/** The visitor's side of the game: pick a nickname, then one prediction a day and its result. */
+/** The visitor's side of the game: log in (or sign up), then one prediction a day and its result. */
 export function Move({
   t,
-  lang,
+  auth,
   loc,
   me,
   price,
   teamToday,
-  token,
-  clearToken,
   busy,
   failure,
-  join,
   predict,
 }: {
   t: Dictionary["play"];
-  lang: Locale;
+  auth: Dictionary["auth"];
   loc: string;
   me: Me | null | undefined;
   price: string | null;
   teamToday: Decision | null;
-  token: string | null;
-  clearToken: () => void;
   busy: boolean;
   failure: Failure;
-  join: (nickname: string) => void;
   predict: (direction: "up" | "down", pct: number) => void;
 }) {
-  const [nickname, setNickname] = useState("");
   const [direction, setDirection] = useState<"up" | "down" | null>(null);
   const [pct, setPct] = useState(50);
-  const [copied, setCopied] = useState(false);
 
   const usd = (v: string | number) => "$" + Number(v).toLocaleString(loc, { maximumFractionDigits: 0 });
   const signed = (v: string) =>
     new Intl.NumberFormat(loc, { style: "currency", currency: "USD", signDisplay: "always", maximumFractionDigits: 0 }).format(Number(v));
   const dirWord = (d: "up" | "down") => (d === "up" ? t.up : t.down);
   const error = (codes: Record<number, string>) =>
-    failure !== null && <p role="alert" className="m-0 text-[13px] text-accent">{codes[failure] ?? t.errOther}</p>;
-  const input = "min-h-11 w-full rounded-xl border-[1.5px] border-line bg-input px-3 text-[15px] text-ink";
+    failure !== null && <p role="alert" className="m-0 text-[13px] text-accent">{codes[failure] ?? auth.errOther}</p>;
   const cta = "btn min-h-11 w-full rounded-xl border-[1.5px] border-line bg-orange text-[15px] font-bold text-[#1e1c1a] disabled:opacity-50";
 
   if (me === undefined) return <div className="flex-1" />;
+  if (me === null) return <AuthForm t={auth} title={auth.loginTitle} />;
 
-  if (me === null)
-    return (
-      <form
-        className="flex flex-col gap-2.5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          join(nickname.trim());
-        }}
-      >
-        <label htmlFor="nickname" className="text-[14px] font-bold">{t.nickname}</label>
-        <input
-          id="nickname"
-          dir="auto"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          minLength={3}
-          maxLength={20}
-          required
-          autoComplete="off"
-          className={input}
-        />
-        <span className="text-[12px] text-muted">{t.nicknameHint}</span>
-        <button type="submit" disabled={busy} className={cta}>{t.join}</button>
-        {error({ 409: t.errTaken, 422: t.errBad, 429: t.errLimit })}
-      </form>
-    );
 
-  const link = token && `${location.origin}/${lang}/recover?token=${token}`;
   const last = me.predictions.find((p) => p.result);
   const bonus = teamToday && BONUS_FOR[teamToday];
 
@@ -92,26 +58,6 @@ export function Move({
           {t.streak} <b className="font-mono text-[15px] text-ink">{me.streak}</b>
         </span>
       </div>
-
-      {link && (
-        <div className="pop flex flex-col gap-1.5 rounded-xl border-2 border-orange bg-orange/15 p-2.5 text-[13px]">
-          <b>{t.recoverTitle}</b>
-          <span className="leading-[1.5]">{t.recoverText}</span>
-          <code dir="ltr" className="truncate rounded-md bg-card px-2 py-1 font-mono text-[11px]">{link}</code>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => navigator.clipboard.writeText(link).then(() => setCopied(true))}
-              className="btn chip min-h-9 rounded-full border border-line bg-card px-3 text-[13px]"
-            >
-              {copied ? t.copied : t.copy}
-            </button>
-            <button type="button" onClick={clearToken} className="btn chip min-h-9 rounded-full border border-line bg-card px-3 text-[13px]">
-              {t.gotIt}
-            </button>
-          </div>
-        </div>
-      )}
 
       {me.today ? (
         <div className="pop flex flex-col gap-1 rounded-xl border-2 border-line p-3 text-[14px]">

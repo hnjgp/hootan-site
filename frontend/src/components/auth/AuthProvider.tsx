@@ -1,0 +1,113 @@
+"use client";
+
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
+export type Prediction = {
+  game_date: string;
+  direction: "up" | "down";
+  stake_pct: number;
+  stake_usd: string;
+  ref_price: string;
+  result: "win" | "lose" | "draw" | null;
+  pnl_usd: string | null;
+};
+export type Me = {
+  nickname: string;
+  avatar: boolean;
+  balance_usd: string;
+  streak: number;
+  today: Prediction | null;
+  predictions: Prediction[];
+};
+export type SignUp = { nickname: string; password: string; email: string | null; phone: string | null };
+/** The HTTP status of a failed request (0 when the network failed), or null. */
+export type Failure = number | null;
+
+const PHOTO_PX = 128;
+
+type Auth = {
+  /** undefined while loading, null when nobody is logged in. */
+  me: Me | null | undefined;
+  setMe: (update: (me: Me | null | undefined) => Me | null | undefined) => void;
+  /** Bumped after a new photo so the <img> reloads it. */
+  photo: number;
+  signUp: (body: SignUp) => Promise<Failure>;
+  logIn: (nickname: string, password: string) => Promise<Failure>;
+  logOut: () => Promise<void>;
+  setPhoto: (file: File) => Promise<boolean>;
+};
+
+const AuthContext = createContext<Auth | null>(null);
+
+export const useAuth = () => useContext(AuthContext)!;
+
+/** Send JSON; the logged-in player on success, the failure status otherwise. */
+async function account(url: string, body: object): Promise<Me | Failure> {
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return r.ok ? r.json() : r.status;
+  } catch {
+    return 0;
+  }
+}
+
+/** Square-crop and shrink a photo to a small JPEG in the browser, so the server stores a few KB. */
+async function shrink(file: File): Promise<Blob> {
+  const image = await createImageBitmap(file);
+  const side = Math.min(image.width, image.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = PHOTO_PX;
+  canvas
+    .getContext("2d")!
+    .drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, PHOTO_PX, PHOTO_PX);
+  return new Promise((done) => canvas.toBlob((b) => done(b!), "image/jpeg", 0.85));
+}
+
+/** Who is logged in, shared by the header and the game section. */
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [me, setMe] = useState<Me | null | undefined>(undefined);
+  const [photo, setPhotoVersion] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/game/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setMe, () => setMe(null));
+  }, []);
+
+  const enter = async (url: string, body: object): Promise<Failure> => {
+    const out = await account(url, body);
+    if (typeof out === "number") return out;
+    setMe(out);
+    return null;
+  };
+
+  const value: Auth = {
+    me,
+    setMe,
+    photo,
+    signUp: (body) => enter("/api/game/players", body),
+    logIn: (nickname, password) => enter("/api/game/login", { nickname, password }),
+    logOut: async () => {
+      await fetch("/api/game/logout", { method: "POST" });
+      setMe(null);
+    },
+    setPhoto: async (file) => {
+      try {
+        const body = await shrink(file);
+        const r = await fetch("/api/game/me/avatar", { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body });
+        if (!r.ok) return false;
+      } catch {
+        return false;
+      }
+      setMe((m) => m && { ...m, avatar: true });
+      setPhotoVersion((n) => n + 1);
+      return true;
+    },
+  };
+
+  return <AuthContext value={value}>{children}</AuthContext>;
+}

@@ -1,20 +1,16 @@
-import Link from "next/link";
 import type { Dictionary, Locale } from "@/i18n";
+import { Account } from "./Account";
 import { Contact } from "./Contact";
 import { LangSwitch } from "./LangSwitch";
 import { ThemeToggle } from "./ThemeToggle";
 
-/** Header shared by every page: name, availability, contact, theme, language and résumé; sticky from tablet width up. */
-export function Header({ lang, t }: { lang: Locale; t: Dictionary["header"] }) {
+/** Header shared by every page: the visitor's account, availability, contact, theme, language and résumé; sticky from tablet width up. */
+export function Header({ lang, t, auth }: { lang: Locale; t: Dictionary["header"]; auth: Dictionary["auth"] }) {
   return (
     <header className="z-20 border-b-[1.5px] border-line bg-head md:sticky md:top-0">
       <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link href={`/${lang}`} className="flex items-center gap-2.5 text-ink no-underline">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/me_avatar_sm.jpg" alt="" className="h-[34px] w-[34px] rounded-full border-[1.5px] border-line" />
-          <span className="text-[16px] font-semibold">{t.name}</span>
-        </Link>
-        <div className="inline-flex items-center gap-2 text-[14px] font-semibold text-green md:max-lg:hidden">
+        <Account t={auth} />
+        <div className="inline-flex items-center gap-2 text-[14px] font-semibold text-green md:max-xl:hidden">
           <span className="pulse h-2 w-2 shrink-0 rounded-full bg-green" aria-hidden="true" />
           {t.open}
         </div>

@@ -1,12 +1,24 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { Account } from "@/components/header/Account";
 import { Play } from "@/components/home/play/Play";
 import { getDictionary } from "@/i18n";
 
 const t = getDictionary("en").play;
+const a = getDictionary("en").auth;
+
+const renderPlay = () =>
+  render(
+    <AuthProvider>
+      <Account t={a} />
+      <Play t={t} auth={a} lang="en" />
+    </AuthProvider>,
+  );
 
 const ME = {
   nickname: "satoshi",
+  avatar: false,
   balance_usd: "100000",
   streak: 0,
   today: null,
@@ -50,7 +62,7 @@ afterEach(() => {
 
 test("the rules sit in one card and the table marks the AI team", async () => {
   backend({ "/api/game/me": [401, { detail: "No player" }] });
-  render(<Play t={t} lang="en" />);
+  renderPlay();
 
   const rules = screen.getByRole("region", { name: t.rulesTitle });
   expect(within(rules).getAllByRole("listitem")).toHaveLength(4);
@@ -60,32 +72,37 @@ test("the rules sit in one card and the table marks the AI team", async () => {
   expect(screen.getByText(t.stats.none)).toBeTruthy();
 });
 
-test("a taken nickname shows its message", async () => {
-  backend({
-    "/api/game/me": [401, null],
-    "/api/game/players": [409, { detail: "Nickname taken" }],
-  });
-  render(<Play t={t} lang="en" />);
+test("logged out, the box asks to log in and offers sign-up with optional email and phone", async () => {
+  backend({ "/api/game/me": [401, null], "/api/game/players": [409, { detail: "Nickname taken" }] });
+  renderPlay();
 
-  fireEvent.change(await screen.findByLabelText(t.nickname), { target: { value: "satoshi" } });
-  fireEvent.click(screen.getByText(t.join));
+  expect(await screen.findByText(a.loginTitle)).toBeTruthy();
+  expect(screen.queryByLabelText(a.email)).toBeNull();
+  fireEvent.click(within(screen.getByText(a.loginTitle).closest("form")!).getByRole("button", { name: a.signup }));
+  fireEvent.change(screen.getByLabelText(a.nickname), { target: { value: "satoshi" } });
+  fireEvent.change(screen.getByLabelText(a.password), { target: { value: "pw" } });
+  expect(screen.getByLabelText(a.email)).toBeTruthy();
+  fireEvent.submit(screen.getByLabelText(a.password).closest("form")!);
 
-  expect(await screen.findByText(t.errTaken)).toBeTruthy();
+  expect(await screen.findByText(a.errTaken)).toBeTruthy();
 });
 
-test("joining shows the recovery link once", async () => {
-  backend({
-    "/api/game/me": [401, null],
-    "/api/game/players": [201, { ...ME, recovery_token: "abc123" }],
-  });
-  render(<Play t={t} lang="en" />);
+test("a wrong password says so, the right one shows the wallet and the header account", async () => {
+  const fetch = backend({ "/api/game/me": [401, null], "/api/game/login": [401, null] });
+  renderPlay();
+  fireEvent.change(await screen.findByLabelText(a.nickname), { target: { value: "satoshi" } });
+  fireEvent.change(screen.getByLabelText(a.password), { target: { value: "nope" } });
+  fireEvent.submit(screen.getByLabelText(a.password).closest("form")!);
+  expect(await screen.findByText(a.errLogin)).toBeTruthy();
 
-  fireEvent.change(await screen.findByLabelText(t.nickname), { target: { value: "satoshi" } });
-  fireEvent.click(screen.getByText(t.join));
+  fetch.mockImplementation(async (url) =>
+    new Response(JSON.stringify(url === "/api/game/login" ? ME : { rows: [], points: [] }), { status: 200 }),
+  );
+  fireEvent.submit(screen.getByLabelText(a.password).closest("form")!);
 
-  expect(await screen.findByText(/\/en\/recover\?token=abc123/)).toBeTruthy();
-  fireEvent.click(screen.getByText(t.gotIt));
-  expect(screen.queryByText(t.recoverTitle)).toBeNull();
+  expect(await screen.findByText(t.wallet)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: a.account }));
+  expect(screen.getByText(a.logout)).toBeTruthy();
 });
 
 test("a prediction is sent with direction and stake, then shown as today's", async () => {
@@ -96,7 +113,7 @@ test("a prediction is sent with direction and stake, then shown as today's", asy
       { game_date: "2026-10-29", direction: "down", stake_pct: 50, stake_usd: "50000", ref_price: "80000", result: null, pnl_usd: null },
     ],
   });
-  render(<Play t={t} lang="en" />);
+  renderPlay();
 
   // The team bought today, so "lower" earns the double bonus.
   expect(await screen.findByText(t.bonus.replace("{dir}", t.down))).toBeTruthy();

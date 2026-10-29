@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     database_url: str
     secret_key: str = "dev-secret"
     contact_email: str = ""
+    admin_token: str = ""
 
     llm_base_url: str = "https://api.avalai.ir/v1"
     llm_api_key: str = ""
