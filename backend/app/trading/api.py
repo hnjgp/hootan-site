@@ -12,11 +12,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import MarketPrice, PortfolioTrade, SessionEvent, TradingSession
+from app.db.models import MarketPrice, Position, SessionEvent, TradingSession
 from app.db.session import get_session
+from app.exchange import calc
+from app.exchange.book import first_snapshot, load_book
 from app.security.rate_limit import RateLimiter, limit_by_ip
-from app.trading.guard import first_session_price
-from app.trading.portfolio import INITIAL_CASH, hold_value, load_portfolio
 from app.trading.run import get_or_create, trading_day
 
 router = APIRouter(prefix="/api/trading")
@@ -137,7 +137,10 @@ async def history(
 async def summary(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> dict:
-    """The team's money against buy-and-hold at the latest price, and its last meeting."""
+    """The team's equity against buy-and-hold at the latest price, and its last meeting.
+
+    Buy-and-hold puts 10,000 USD into BTC at the team's first daily snapshot.
+    """
     today = trading_day(datetime.now(UTC))
     price = await session.scalar(
         select(MarketPrice.price).order_by(MarketPrice.ts.desc()).limit(1)
@@ -145,17 +148,18 @@ async def summary(
     own = await session.scalar(
         select(TradingSession).where(TradingSession.session_date == today)
     )
-    value = held = INITIAL_CASH
+    value = held = calc.START_USD
     if price is not None:
-        value = (await load_portfolio(session)).value(price)
-        first = await first_session_price(session)
-        held = hold_value(first, price) if first else INITIAL_CASH
+        value = (await load_book(session, None)).equity(price)
+        first = await first_snapshot(session, None)
+        if first:
+            held = calc.START_USD * price / first.price
     last = await last_done(session)
     return {
         "trading_day": today,
         "today_status": own.status if own else None,
         "today_started_at": own.started_at if own else None,
-        "start_usd": INITIAL_CASH,
+        "start_usd": calc.START_USD,
         "value_usd": round(value, 2),
         "hold_usd": round(held, 2),
         "last": session_out(last) | {"events": await events_of(session, last)}
@@ -168,11 +172,22 @@ async def summary(
 async def trades(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[dict]:
-    """The team's latest buys and sells, oldest first, for the chart markers."""
-    rows = await session.scalars(
-        select(PortfolioTrade).order_by(PortfolioTrade.created_at.desc()).limit(TRADES)
+    """The team's latest openings and closings, oldest first, for the chart markers.
+
+    side is long or short for an opening and close for a closing.
+    """
+    rows = list(
+        await session.scalars(
+            select(Position)
+            .where(Position.player_id.is_(None))
+            .order_by(Position.id.desc())
+            .limit(TRADES)
+        )
     )
-    return [
-        {"ts": t.created_at, "side": t.side, "price": t.price}
-        for t in reversed(list(rows))
+    marks = [{"ts": p.opened_at, "side": p.side, "price": p.entry_price} for p in rows]
+    marks += [
+        {"ts": p.closed_at, "side": "close", "price": p.close_price}
+        for p in rows
+        if p.closed_at
     ]
+    return sorted(marks, key=lambda m: m["ts"])

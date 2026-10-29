@@ -13,11 +13,11 @@ from langgraph.runtime import Runtime
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import PortfolioTrade, SessionEvent, TradingSession
+from app.db.models import SessionEvent, TradingSession
+from app.exchange.book import Book, close_position, open_position
 from app.llm.client import LLMClient
 from app.trading import prompts
-from app.trading.portfolio import Portfolio
-from app.trading.risk import Order, apply_pm, check_proposal
+from app.trading.risk import Plan, apply_pm, check_proposal
 from app.trading.schema import PMDecision, TraderProposal
 from app.trading.translate import translate_line
 
@@ -50,11 +50,11 @@ class State(TypedDict, total=False):
 
     market: dict
     price: Decimal
-    portfolio: Portfolio
+    book: Book
     briefing: str
     transcript: Annotated[list[str], operator.add]
     proposal: TraderProposal | None
-    order: Order
+    plan: Plan
 
 
 async def record(
@@ -106,27 +106,54 @@ async def decide[T: BaseModel](
     return reply
 
 
-def describe(order: Order) -> str:
-    """The order in one short phrase, e.g. 'BUY 0.25 BTC'."""
-    return order.action if order.action == "HOLD" else f"{order.action} {order.qty} BTC"
+def describe(plan: Plan) -> str:
+    """The plan in one short phrase, e.g. 'close #3; open long 2x with 1,000.00 USD margin'."""
+    parts = [f"close #{i}" for i in plan.close]
+    if new := plan.new:
+        text = (
+            f"open {new.side} {new.leverage}x with {new.margin:,.2f} USD margin, "
+            f"stop loss at {new.sl_price:,.2f}"
+        )
+        if new.tp_price:
+            text += f", take profit at {new.tp_price:,.2f}"
+        parts.append(text)
+    return "; ".join(parts) or "no change"
 
 
-def code_check(order: Order) -> str:
+def code_check(plan: Plan) -> str:
     """What the risk code did, stated plainly.
 
     With only 'Notes: none', the risk manager and PM claimed the size had been cut
     when it had not (first real meeting, 2026-10-27).
     """
-    if order.notes:
-        text = f"Code check changed the proposal: {' '.join(order.notes)}"
+    if plan.notes:
+        text = f"Code check changed the proposal: {' '.join(plan.notes)}"
     else:
         text = "Code check: the proposal passed every rule unchanged."
-    return f"{text} Checked order: {describe(order)}."
+    return f"{text} Checked plan: {describe(plan)}."
+
+
+def plan_payload(plan: Plan) -> dict:
+    """The plan as JSON for the event log."""
+    new = plan.new
+    return {
+        "close": plan.close,
+        "new": None
+        if new is None
+        else {
+            "side": new.side,
+            "margin": str(new.margin),
+            "leverage": new.leverage,
+            "tp_price": str(new.tp_price) if new.tp_price else None,
+            "sl_price": str(new.sl_price),
+        },
+        "notes": plan.notes,
+    }
 
 
 async def data(state: State, runtime: Runtime[Meeting]) -> State:
     line = prompts.market_line(state["market"])
-    briefing = f"{line}\n{prompts.portfolio_line(state['portfolio'], state['price'])}"
+    briefing = f"{line}\n{prompts.book_line(state['book'], state['price'])}"
     lines = await record(
         runtime.context, "data", "speech", line, payload=state["market"]
     )
@@ -151,59 +178,65 @@ async def bear(state: State, runtime: Runtime[Meeting]) -> State:
 async def trader(state: State, runtime: Runtime[Meeting]) -> State:
     proposal = await decide(runtime.context, "trader", state, TraderProposal)
     if proposal is None:
-        text, payload = "I could not form a valid proposal, so I propose HOLD.", None
+        text, payload = (
+            "I could not form a valid proposal, so I propose no change.",
+            None,
+        )
     else:
-        text = f"{proposal.reason} Proposal: {proposal.action} {proposal.size_pct:g}%."
+        calls = ", ".join(f"{c.action} #{c.id}" for c in proposal.positions)
+        new = proposal.new_position
+        opening = (
+            f"open {new.side} {new.leverage}x with {new.margin_pct:g}% margin"
+            if new
+            else "no new position"
+        )
+        text = f"{proposal.reason} Proposal: {calls or 'nothing open'}; {opening}."
         payload = proposal.model_dump()
     lines = await record(runtime.context, "trader", "decision", text, payload=payload)
     return {"proposal": proposal, "transcript": lines}
 
 
 async def risk(state: State, runtime: Runtime[Meeting]) -> State:
-    order = check_proposal(state["proposal"], state["portfolio"], state["price"])
-    text = await speak(runtime.context, "risk", state, extra=code_check(order))
-    payload = {"action": order.action, "qty": str(order.qty), "notes": order.notes}
-    lines = await record(runtime.context, "risk", "risk", text, payload=payload)
-    return {"order": order, "transcript": lines}
+    plan = check_proposal(state["proposal"], state["book"], state["price"])
+    text = await speak(runtime.context, "risk", state, extra=code_check(plan))
+    lines = await record(
+        runtime.context, "risk", "risk", text, payload=plan_payload(plan)
+    )
+    return {"plan": plan, "transcript": lines}
 
 
 async def pm(state: State, runtime: Runtime[Meeting]) -> State:
-    m, order, price = runtime.context, state["order"], state["price"]
+    m, plan = runtime.context, state["plan"]
     decision = None
-    if order.action != "HOLD":
-        decision = await decide(m, "pm", state, PMDecision, extra=code_check(order))
-    final = apply_pm(order, decision, price)
-    text = decision.reason if decision else "Nothing to trade today; we hold."
-    text += f" Final decision: {describe(final)}"
-    if final.stop_price:
-        text += f", stop loss at {final.stop_price}"
-    text += "."
-    payload = {
-        "action": final.action,
-        "qty": str(final.qty),
-        "stop_price": str(final.stop_price) if final.stop_price else None,
-        "notes": final.notes,
-    }
-    lines = await record(m, "pm", "decision", text, payload=payload)
-    return {"order": final, "transcript": lines}
+    if not plan.empty:
+        decision = await decide(m, "pm", state, PMDecision, extra=code_check(plan))
+    final = apply_pm(plan, decision)
+    text = decision.reason if decision else "Nothing to change today; we wait."
+    text += f" Final decision: {describe(final)}."
+    lines = await record(m, "pm", "decision", text, payload=plan_payload(final))
+    return {"plan": final, "transcript": lines}
 
 
 async def execute(state: State, runtime: Runtime[Meeting]) -> State:
-    """Apply the final order to the virtual portfolio and the session row."""
-    m, order, price = runtime.context, state["order"], state["price"]
-    if order.action != "HOLD":
-        m.db.add(
-            PortfolioTrade(
-                session_id=m.row.id,
-                side=order.action,
-                qty=order.qty,
-                price=price,
-                stop_price=order.stop_price,
-                reason="Daily meeting decision",
-            )
+    """Apply the final plan on the exchange and record it on the session row."""
+    m, plan, price = runtime.context, state["plan"], state["price"]
+    for position_id in plan.close:
+        await close_position(m.db, None, position_id, price, "team")
+    m.row.decision = "CLOSE" if plan.close else "HOLD"
+    m.row.price, m.row.qty = price, None
+    if new := plan.new:
+        position = await open_position(
+            m.db,
+            None,
+            new.side,
+            new.margin,
+            new.leverage,
+            price,
+            new.tp_price,
+            new.sl_price,
+            session_id=m.row.id,
         )
-    m.row.decision, m.row.price = order.action, price
-    m.row.qty = None if order.action == "HOLD" else order.qty
+        m.row.decision, m.row.qty = new.side.upper(), position.qty
     await m.db.commit()
     return {}
 
@@ -229,17 +262,17 @@ async def run_meeting(
     llm: LLMClient,
     row: TradingSession,
     market: dict,
-    portfolio: Portfolio,
-) -> Order:
-    """Hold the meeting for `row` and return the final order.
+    book: Book,
+) -> Plan:
+    """Hold the meeting for `row` and return the final plan.
 
     `market` holds plain floats (stored as JSON); trades use the exact Decimal price.
     """
     state = {
         "market": market,
         "price": Decimal(str(market["price"])),
-        "portfolio": portfolio,
+        "book": book,
         "transcript": [],
     }
     result = await GRAPH.ainvoke(state, context=Meeting(db, llm, row))
-    return result["order"]
+    return result["plan"]

@@ -1,15 +1,17 @@
-"""Leaderboard by percent return: this Persian month, or all time from 100,000 USD."""
+"""Leaderboard by percent return on equity: this Persian month, or all time from
+10,000 USD. The AI team is one of the rows."""
 
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import MarketPrice, Player, PortfolioSnapshot, Prediction
-from app.game.season import season_day, season_start
-from app.trading.portfolio import INITIAL_CASH, load_portfolio
+from app.db.models import EquitySnapshot, Player
+from app.exchange import book, calc
+from app.game.season import season_day
 
 Period = Literal["month", "all"]
 AI_NAME = "AI Trading Team"
@@ -20,65 +22,37 @@ def pct(gain: Decimal, base: Decimal) -> float:
     return round(float(gain / base * 100), 2)
 
 
-async def player_rows(db: AsyncSession, period: Period, now: datetime) -> list[dict]:
-    """Players with at least one prediction and their return for the period.
-
-    A month's return is its P&L over the balance at the month's start (balance minus it).
-    """
-    in_season = Prediction.game_date >= season_day(now)
-    month_pnl = func.coalesce(func.sum(Prediction.pnl_usd).filter(in_season), 0)
-    query = (
-        select(Player.nickname, Player.balance_usd, func.count(), month_pnl)
-        .join(Prediction)
-        .group_by(Player.id)
+async def month_starts(db: AsyncSession, now: datetime) -> dict:
+    """Each owner's first equity snapshot of the season; without one, START_USD."""
+    rows = await db.execute(
+        select(EquitySnapshot.player_id, EquitySnapshot.equity_usd)
+        .where(EquitySnapshot.day >= season_day(now))
+        .order_by(EquitySnapshot.player_id, EquitySnapshot.day)
+        .ext(distinct_on(EquitySnapshot.player_id))
     )
-    if period == "month":
-        query = query.having(func.count().filter(in_season) > 0)
+    return dict(rows.all())
+
+
+async def leaderboard(
+    db: AsyncSession, period: Period, price: Decimal, now: datetime
+) -> list[dict]:
+    """Every ranked row, best return first, each with its rank.
+
+    Players appear after their first position; the team always appears.
+    """
+    found = await book.books(db)
+    found.setdefault(None, book.Book())
+    names = dict((await db.execute(select(Player.id, Player.nickname))).all())
+    starts = await month_starts(db, now) if period == "month" else {}
     rows = []
-    for nickname, balance, count, pnl in await db.execute(query):
-        if period == "month":
-            ret = pct(pnl, balance - pnl)
-        else:
-            ret = pct(balance - INITIAL_CASH, INITIAL_CASH)
+    for owner, b in found.items():
+        start = starts.get(owner, calc.START_USD)
         rows.append(
             {
-                "nickname": nickname,
-                "return_pct": ret,
-                "predictions": count,
-                "is_ai": False,
+                "nickname": AI_NAME if owner is None else names[owner],
+                "return_pct": pct(b.equity(price) - start, start),
+                "is_ai": owner is None,
             }
         )
-    return rows
-
-
-async def ai_row(db: AsyncSession, period: Period, now: datetime) -> dict:
-    """The AI team's portfolio return at the latest price.
-
-    The month starts from the first hourly snapshot of the season.
-    """
-    price = await db.scalar(
-        select(MarketPrice.price).order_by(MarketPrice.ts.desc()).limit(1)
-    )
-    value = (await load_portfolio(db)).value(price)
-    start = INITIAL_CASH
-    if period == "month":
-        first = await db.scalar(
-            select(PortfolioSnapshot.value_usd)
-            .where(PortfolioSnapshot.ts >= season_start(now))
-            .order_by(PortfolioSnapshot.ts)
-            .limit(1)
-        )
-        start = first or INITIAL_CASH
-    return {
-        "nickname": AI_NAME,
-        "return_pct": pct(value - start, start),
-        "predictions": None,
-        "is_ai": True,
-    }
-
-
-async def leaderboard(db: AsyncSession, period: Period, now: datetime) -> list[dict]:
-    """Every ranked row, best return first, the AI team among them, each with its rank."""
-    rows = await player_rows(db, period, now) + [await ai_row(db, period, now)]
     rows.sort(key=lambda r: r["return_pct"], reverse=True)
     return [{"rank": i} | r for i, r in enumerate(rows, start=1)]

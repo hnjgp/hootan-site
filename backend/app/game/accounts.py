@@ -5,6 +5,7 @@ a required email and an optional phone. The signed cookie says who is logged in.
 """
 
 from datetime import timedelta
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -13,9 +14,9 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.db.models import MarketPrice, Player
+from app.db.models import Player
 from app.db.session import get_session
-from app.game.api import check_limit, me_out
+from app.game.api import check_limit, me_out, shown_price
 from app.game.players import require_player
 from app.security.cookie import COOKIE_NAME, set_player_cookie
 from app.security.rate_limit import RateLimiter
@@ -60,8 +61,9 @@ async def sign_up(
     request: Request,
     response: Response,
     session: Annotated[AsyncSession, Depends(get_session)],
+    price: Annotated[Decimal, Depends(shown_price)],
 ) -> dict:
-    """Create an account with a 100,000 USD wallet and log it in."""
+    """Create an account with 10,000 USD of cash and log it in."""
     if await by_nickname(session, body.nickname):
         raise HTTPException(status_code=409, detail="Nickname taken")
     taken = await session.scalar(
@@ -76,15 +78,13 @@ async def sign_up(
         password=body.password,
         email=body.email,
         phone=body.phone,
-        signup_price=await session.scalar(
-            select(MarketPrice.price).order_by(MarketPrice.ts.desc()).limit(1)
-        ),
+        signup_price=price,
         created_ip_hash=visitor_id(request, settings),
     )
     session.add(player)
     await session.commit()
     set_player_cookie(response, player.id, settings, body.remember)
-    return await me_out(session, player)
+    return await me_out(session, player, price)
 
 
 @router.post("/login")
@@ -93,6 +93,7 @@ async def log_in(
     request: Request,
     response: Response,
     session: Annotated[AsyncSession, Depends(get_session)],
+    price: Annotated[Decimal, Depends(shown_price)],
 ) -> dict:
     """Log in with nickname and password; 401 when either is wrong.
 
@@ -103,7 +104,7 @@ async def log_in(
     if player is None or player.password != body.password:
         raise HTTPException(status_code=401, detail="Wrong nickname or password")
     set_player_cookie(response, player.id, get_settings(), body.remember)
-    return await me_out(session, player)
+    return await me_out(session, player, price)
 
 
 @router.post("/logout", status_code=204)

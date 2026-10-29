@@ -35,7 +35,9 @@ def created_at_column() -> Mapped[datetime]:
 
 
 class Player(Base):
-    """A registered player with a virtual USD wallet; the signed cookie says who is logged in.
+    """A registered player of the demo exchange; the signed cookie says who is logged in.
+
+    Cash is not stored: it follows from the player's positions (app/exchange).
 
     The password is stored as typed: Hootan wants to read it in the admin panel
     (Decision Log 2026-10-30). Email is required and unique ignoring case, phone
@@ -49,38 +51,15 @@ class Player(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     nickname: Mapped[str] = mapped_column(String(20), unique=True)
-    balance_usd: Mapped[Decimal] = mapped_column(
-        Numeric(18, 2), default=Decimal(100_000), server_default="100000"
-    )
     password: Mapped[str | None] = mapped_column(String(128))
     email: Mapped[str | None] = mapped_column(String(254))
     phone: Mapped[str | None] = mapped_column(String(20))
     avatar: Mapped[bytes | None] = mapped_column(LargeBinary)
-    # BTC price at sign-up: what 100,000 USD held since then would be worth.
+    # BTC price at sign-up: what 10,000 USD held since then would be worth.
     signup_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
     reset_code_hash: Mapped[str | None] = mapped_column(String(64))
     reset_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_ip_hash: Mapped[str | None] = mapped_column(String(64))
-    created_at: Mapped[datetime] = created_at_column()
-
-
-class Prediction(Base):
-    """One up/down prediction per player per trading day, staking a share of the wallet."""
-
-    __tablename__ = "predictions"
-    __table_args__ = (UniqueConstraint("player_id", "game_date"),)
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    player_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("players.id", ondelete="CASCADE")
-    )
-    game_date: Mapped[date] = mapped_column(Date)
-    direction: Mapped[str] = mapped_column(String(4))
-    stake_pct: Mapped[int] = mapped_column(Integer)
-    stake_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
-    ref_price: Mapped[Decimal] = mapped_column(Numeric(18, 2))
-    result: Mapped[str | None] = mapped_column(String(4))
-    pnl_usd: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -105,7 +84,8 @@ class TradingSession(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     session_date: Mapped[date] = mapped_column(Date, unique=True)
     status: Mapped[str] = mapped_column(String(16))
-    decision: Mapped[str | None] = mapped_column(String(4))
+    # LONG or SHORT (opened a position), CLOSE (only closed) or HOLD.
+    decision: Mapped[str | None] = mapped_column(String(8))
     qty: Mapped[Decimal | None] = mapped_column(Numeric(18, 8))
     price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
     cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6), default=Decimal(0))
@@ -132,37 +112,54 @@ class SessionEvent(Base):
     created_at: Mapped[datetime] = created_at_column()
 
 
-class PortfolioTrade(Base):
-    """One buy or sell of the AI team; the portfolio is the sum of these.
+class Position(Base):
+    """A long or short BTC position with isolated margin; player_id is empty for the AI team.
 
-    session_id is empty for a stop-loss sell made by code between sessions.
+    fee_usd is every fee paid so far (opening, then closing). pnl_usd, set at closing,
+    is the position's net effect on cash: what came back minus margin and fees.
     """
 
-    __tablename__ = "portfolio_trades"
+    __tablename__ = "positions"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    session_id: Mapped[int | None] = mapped_column(
-        ForeignKey("trading_sessions.id", ondelete="CASCADE")
+    player_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
     )
-    side: Mapped[str] = mapped_column(String(4))
+    session_id: Mapped[int | None] = mapped_column(
+        ForeignKey("trading_sessions.id", ondelete="SET NULL")
+    )
+    side: Mapped[str] = mapped_column(String(5))
+    entry_price: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    margin_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    leverage: Mapped[int] = mapped_column(Integer)
     qty: Mapped[Decimal] = mapped_column(Numeric(18, 8))
-    price: Mapped[Decimal] = mapped_column(Numeric(18, 2))
-    stop_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
-    reason: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime] = created_at_column()
+    tp_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    sl_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    liq_price: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    fee_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    opened_at: Mapped[datetime] = created_at_column()
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    close_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    close_reason: Mapped[str | None] = mapped_column(String(8))
+    pnl_usd: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
 
 
-class PortfolioSnapshot(Base):
-    """Portfolio value at one moment next to the buy-and-hold value, for the chart."""
+class EquitySnapshot(Base):
+    """A player's (or, with no player, the team's) equity on the first check of a
+    trading day: the start of the month's return and of the team's buy-and-hold."""
 
-    __tablename__ = "portfolio_snapshots"
+    __tablename__ = "equity_snapshots"
+    __table_args__ = (
+        UniqueConstraint("day", "player_id", postgresql_nulls_not_distinct=True),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), unique=True)
-    cash: Mapped[Decimal] = mapped_column(Numeric(18, 2))
-    btc_qty: Mapped[Decimal] = mapped_column(Numeric(18, 8))
-    value_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
-    hold_value_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    day: Mapped[date] = mapped_column(Date)
+    player_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE")
+    )
+    equity_usd: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    price: Mapped[Decimal] = mapped_column(Numeric(18, 2))
 
 
 class LLMUsage(Base):

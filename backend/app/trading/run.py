@@ -16,11 +16,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.db.models import LLMUsage, TradingSession
 from app.db.session import SessionLocal
+from app.exchange.book import load_book
 from app.llm.budget import TEHRAN, BudgetExceeded, check_budget
 from app.llm.client import LLMClient
 from app.trading.graph import run_meeting
 from app.trading.market import market_snapshot
-from app.trading.portfolio import load_portfolio
 
 log = logging.getLogger("trading")
 DAY_START = timedelta(hours=9)
@@ -98,8 +98,8 @@ async def hold_meeting(
     try:
         await check_budget(db, "trading", llm.settings)
         market = await load_market(db)
-        portfolio = await load_portfolio(db)
-        await run_meeting(db, llm, row, market, portfolio)
+        book = await load_book(db, None)
+        await run_meeting(db, llm, row, market, book)
         row.status = "done"
     except BudgetExceeded:
         await db.rollback()

@@ -5,8 +5,9 @@ import httpx2
 import pytest
 from sqlalchemy import func, select
 
-from app.db.models import MarketPrice, PortfolioTrade, SessionEvent, TradingSession
+from app.db.models import EquitySnapshot, MarketPrice, SessionEvent, TradingSession
 from app.db.session import get_session
+from app.exchange.book import open_position
 from app.main import app
 from app.trading.api import START_LIMITERS
 from app.trading.run import trading_day
@@ -19,11 +20,11 @@ AGENTS = ["data", "news", "bull", "bear", "trader", "risk", "pm"]
 
 
 async def meeting(session, day, status: str = "done") -> TradingSession:
-    """A recorded BUY meeting with all seven speakers."""
+    """A recorded LONG meeting with all seven speakers."""
     row = TradingSession(
         session_date=day,
         status=status,
-        decision="BUY",
+        decision="LONG",
         qty=Decimal("0.25"),
         price=Decimal(80_000),
     )
@@ -91,7 +92,7 @@ async def test_todays_meeting_is_shown_in_full_to_everyone(api, session):
     shown = (await api.get(TODAY_URL)).json()["session"]
 
     assert shown["session_date"] == str(TODAY)
-    assert shown["decision"] == "BUY"
+    assert shown["decision"] == "LONG"
     assert [e["agent"] for e in shown["events"]] == AGENTS
     assert shown["events"][6]["text_en"] == "pm speaks"
 
@@ -114,7 +115,7 @@ async def test_skipped_today_replays_yesterday_in_full(api, session):
     assert body["today_status"] == "skipped"
     shown = body["session"]
     assert shown["session_date"] == str(YESTERDAY)
-    assert shown["decision"] == "BUY"
+    assert shown["decision"] == "LONG"
     assert len(shown["events"]) == 7
 
 
@@ -125,7 +126,7 @@ async def test_history_is_newest_first(api, session):
     rows = (await api.get("/api/trading/sessions/history")).json()
 
     assert [r["session_date"] for r in rows] == [str(TODAY), str(YESTERDAY)]
-    assert [r["decision"] for r in rows] == ["BUY", "BUY"]
+    assert [r["decision"] for r in rows] == ["LONG", "LONG"]
 
 
 async def test_sixth_click_in_a_day_is_limited(api):
@@ -144,32 +145,31 @@ async def price_now(session, value: int) -> None:
     await session.commit()
 
 
-async def test_summary_starts_at_100k_before_any_price(api):
+async def test_summary_starts_at_10k_before_any_price(api):
     body = (await api.get("/api/trading/summary")).json()
 
-    assert Decimal(body["value_usd"]) == Decimal(body["hold_usd"]) == 100_000
+    assert Decimal(body["value_usd"]) == Decimal(body["hold_usd"]) == 10_000
     assert body["last"] is None
 
 
 async def test_summary_compares_the_team_with_holding(api, session):
     row = await meeting(session, YESTERDAY)
     session.add(
-        PortfolioTrade(
-            session_id=row.id,
-            side="BUY",
-            qty=Decimal("0.25"),
-            price=Decimal(80_000),
-            reason="test",
+        EquitySnapshot(
+            day=YESTERDAY, player_id=None, equity_usd=10_000, price=Decimal(80_000)
         )
+    )
+    await open_position(
+        session, None, "long", Decimal(2_000), 1, Decimal(80_000), session_id=row.id
     )
     await price_now(session, 88_000)
 
     body = (await api.get("/api/trading/summary")).json()
 
-    # Team: 0.25 BTC gained 2,000 on 100,000; holding everything gained 10%.
-    assert Decimal(body["value_usd"]) == 102_000
-    assert Decimal(body["hold_usd"]) == 110_000
-    assert body["last"]["decision"] == "BUY"
+    # Team: a 2,000 USD long gained 10% (200) minus a 1 USD fee; holding gained 10%.
+    assert Decimal(body["value_usd"]) == 10_199
+    assert Decimal(body["hold_usd"]) == 11_000
+    assert body["last"]["decision"] == "LONG"
     assert len(body["last"]["events"]) == 7
 
 
@@ -180,7 +180,7 @@ async def test_summary_shows_todays_decision(api, session):
     body = (await api.get("/api/trading/summary")).json()
 
     assert body["today_status"] == "done"
-    assert body["last"]["decision"] == "BUY"
+    assert body["last"]["decision"] == "LONG"
 
 
 async def test_summary_tells_when_todays_meeting_started(api, session):

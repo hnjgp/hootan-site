@@ -10,7 +10,7 @@ from app.db.models import Player
 from app.db.session import get_session
 from app.game import password
 from app.game.accounts import SIGNUP_LIMITER
-from app.game.api import live_price
+from app.game.api import shown_price
 from app.main import app
 
 
@@ -26,7 +26,7 @@ async def api(session, monkeypatch):
         lambda settings, to, subject, body: sent.append((to, body)),
     )
     app.dependency_overrides[get_session] = lambda: session
-    app.dependency_overrides[live_price] = lambda: Decimal(80_000)
+    app.dependency_overrides[shown_price] = lambda: Decimal(80_000)
     transport = httpx2.ASGITransport(app=app)
     async with httpx2.AsyncClient(transport=transport, base_url="https://test") as c:
         c.sent = sent

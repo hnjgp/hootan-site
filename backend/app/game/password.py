@@ -10,6 +10,7 @@ import hmac
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -21,7 +22,7 @@ from app.config import Settings, get_settings
 from app.db.models import Player
 from app.db.session import get_session
 from app.game.accounts import Password
-from app.game.api import check_limit, me_out
+from app.game.api import check_limit, me_out, shown_price
 from app.mail import send_mail
 from app.security.cookie import set_player_cookie
 from app.security.rate_limit import RateLimiter
@@ -113,6 +114,7 @@ async def reset(
     request: Request,
     response: Response,
     session: Annotated[AsyncSession, Depends(get_session)],
+    price: Annotated[Decimal, Depends(shown_price)],
 ) -> dict:
     """Set the new password and log in; 400 for a wrong, used or expired code."""
     check_limit(RESET_LIMITER, request)
@@ -130,4 +132,4 @@ async def reset(
     player.reset_code_hash = player.reset_expires_at = None
     await session.commit()
     set_player_cookie(response, player.id, settings, body.remember)
-    return await me_out(session, player)
+    return await me_out(session, player, price)

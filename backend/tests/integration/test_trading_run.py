@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 from sqlalchemy import func, select
 
 from app.config import get_settings
-from app.db.models import PortfolioTrade, SessionEvent, TradingSession
+from app.db.models import Position, SessionEvent, TradingSession
 from app.llm.fake import FakeLLMClient
 from app.market.prices import PriceUnavailable
 from app.trading.run import (
@@ -33,11 +33,23 @@ REPLIES = [
     FA,
     "Wait.",
     FA,
-    json.dumps({"reason": "Oversold.", "action": "BUY", "size_pct": 10}),
+    json.dumps(
+        {
+            "reason": "Oversold.",
+            "positions": [],
+            "new_position": {
+                "side": "long",
+                "margin_pct": 10,
+                "leverage": 2,
+                "take_profit_pct": 0,
+                "stop_loss_pct": 5,
+            },
+        }
+    ),
     FA,
     "Within limits.",
     FA,
-    json.dumps({"reason": "Approved.", "approve": True, "stop_loss_pct": 5}),
+    json.dumps({"reason": "Approved.", "approve": True}),
     FA,
 ]
 
@@ -103,9 +115,9 @@ async def test_meeting_ends_done_with_trade_and_persian_text(session):
     row = await hold_meeting(session, client, row, load_market=fixed_market)
 
     assert row.status == "done"
-    assert row.decision == "BUY"
+    assert row.decision == "LONG"
     assert row.started_at <= row.finished_at
-    assert await count(session, PortfolioTrade) == 1
+    assert await count(session, Position) == 1
     texts = await session.scalars(select(SessionEvent.text_fa))
     assert list(texts) == ["متن"] * 7
 
@@ -128,4 +140,4 @@ async def test_price_outage_fails_the_meeting_without_trading(session):
 
     assert row.status == "failed"
     assert row.finished_at is not None
-    assert await count(session, PortfolioTrade) == 0
+    assert await count(session, Position) == 0

@@ -33,7 +33,6 @@ async def players(
             "password": p.password,
             "email": p.email,
             "phone": p.phone,
-            "balance_usd": p.balance_usd,
             "created_at": p.created_at,
         }
         for p in rows

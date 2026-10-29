@@ -2,39 +2,45 @@
 
 from decimal import Decimal
 
-from app.trading.portfolio import Portfolio
+from app.db.models import Position
+from app.exchange.book import Book, pnl
 
 TEAM = (
-    "You are part of a small AI team that trades BTC/USDT with virtual money once "
-    "a day. Only BTC can be bought or sold: no shorting, no leverage, no options. "
-    "If the portfolio holds no BTC, selling is not possible. Use only the numbers "
-    "and comparisons you are given; do not compute new ones. Speak plainly in at "
-    "most three short sentences, without bullet points."
+    "You are part of a small AI team that trades BTC/USDT with virtual money on a "
+    "demo exchange, meeting once a day. The team can open long positions (profit "
+    "when BTC rises) or short positions (profit when it falls), with leverage up to "
+    "5x, and close open positions. Each position has its own margin; a stop loss "
+    "closes it automatically, and at the liquidation price the whole margin is lost. "
+    "Opening and closing each cost a 0.05% fee on the position size. Use only the "
+    "numbers and comparisons you are given; do not compute new ones. Speak plainly "
+    "in at most three short sentences, without bullet points."
 )
 
 ROLES = {
-    "bull": "You are the bull. Make the strongest honest case for buying BTC today.",
-    "bear": "You are the bear. Make the strongest honest case against buying, "
-    "or for selling the BTC held.",
+    "bull": "You are the bull. Make the strongest honest case that BTC will rise: "
+    "for a long position, or for closing short positions.",
+    "bear": "You are the bear. Make the strongest honest case that BTC will fall: "
+    "for a short position, or for closing long positions.",
     # In the first eval (2026-10-27) the trader chose BUY 20 times out of 20, even
-    # with RSI 76 or BTC already at the cap, so every choice is described here.
-    "trader": "You are the trader. Weigh the bull and the bear fairly and choose "
-    "one action. BUY only when the case for a rise is clearly stronger. SELL part "
-    "or all of the BTC held when the risk of a fall is clearly higher, for example "
-    "after a strong rally with RSI above 70. HOLD when the cases are balanced or "
-    "the signal is weak; HOLD is a normal and often correct choice. When BTC is "
-    "already 20% of the portfolio, BUY is not possible. size_pct: for BUY, percent "
-    "of the total portfolio value to spend; for SELL, percent of the BTC held to "
-    "sell; 0 for HOLD.",
+    # with RSI 76, so every choice is described here.
+    "trader": "You are the trader. Weigh the bull and the bear fairly. For every "
+    "open position choose hold or close: close when the case has turned against it. "
+    "Then open at most one new position, only when one side is clearly stronger: "
+    "long when a rise is clearly more likely, short when a fall is, for example "
+    "after a strong rally with RSI above 70. Otherwise set new_position to null; "
+    "doing nothing is a normal and often correct choice. margin_pct is the percent "
+    "of equity put up as margin (the limit is 20); leverage 1 to 5, lower when "
+    "unsure; stop_loss_pct 1 to 5; take_profit_pct is the price move at which to "
+    "take profit, or 0 for none.",
     "risk": "You are the risk manager. Code has already checked the trader's "
-    "proposal against the risk rules. Explain the checked order and any rule that "
+    "plan against the risk rules. Explain the checked plan and any rule that "
     "changed it.",
     "pm": "You are the portfolio manager and make the final call. Approve or reject "
-    "the checked order. For a BUY choose stop_loss_pct between 1 and 5.",
+    "the checked plan as a whole.",
 }
 
 
-def fmt(value: float | None) -> str:
+def fmt(value: float | Decimal | None) -> str:
     """A number with thousands separators, or n/a when missing."""
     return "n/a" if value is None else f"{value:,.2f}"
 
@@ -62,14 +68,27 @@ def market_line(market: dict) -> str:
     )
 
 
-def portfolio_line(portfolio: Portfolio, price: Decimal) -> str:
-    """Cash, BTC held and the BTC share of the portfolio."""
-    value = portfolio.value(price)
-    share = portfolio.btc_qty * price / value * 100
+def position_line(p: Position, price: Decimal) -> str:
+    """One open position with its floating result."""
+    tp = fmt(p.tp_price) if p.tp_price else "none"
     return (
-        f"Portfolio: {fmt(value)} USD in total, {fmt(portfolio.cash)} USD cash, "
-        f"{portfolio.btc_qty} BTC ({share:.1f}% of the portfolio)."
+        f"#{p.id} {p.side} {p.leverage}x, entry {fmt(p.entry_price)}, margin "
+        f"{fmt(p.margin_usd)} USD, floating P&L {fmt(pnl(p, price))} USD, take "
+        f"profit {tp}, stop loss {fmt(p.sl_price)}, liquidation {fmt(p.liq_price)}"
     )
+
+
+def book_line(book: Book, price: Decimal) -> str:
+    """Equity, free cash and every open position."""
+    lines = [
+        f"Account: {fmt(book.equity(price))} USD equity, {fmt(book.cash)} USD free cash."
+    ]
+    if book.open:
+        lines.append("Open positions:")
+        lines += [position_line(p, price) for p in book.open]
+    else:
+        lines.append("No open positions.")
+    return "\n".join(lines)
 
 
 def messages(

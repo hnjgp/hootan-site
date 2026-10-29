@@ -1,5 +1,4 @@
 from datetime import date
-from decimal import Decimal
 
 import pytest
 from sqlalchemy import delete, func, select
@@ -9,8 +8,8 @@ from app.db.models import (
     EMBED_DIM,
     DocChunk,
     Document,
+    EquitySnapshot,
     Player,
-    Prediction,
     TradingSession,
 )
 
@@ -45,21 +44,17 @@ async def test_nickname_is_unique(session):
         await session.flush()
 
 
-async def test_one_prediction_per_player_per_day(session):
-    player = Player(nickname="p1")
-    session.add(player)
-    await session.flush()
+async def test_one_snapshot_per_owner_and_day_even_for_the_team(session):
     for _ in range(2):
-        session.add(
-            Prediction(
-                player_id=player.id,
-                game_date=DAY,
-                direction="up",
-                stake_pct=10,
-                stake_usd=10_000,
-                ref_price=Decimal("100000.00"),
-            )
-        )
+        session.add(EquitySnapshot(day=DAY, player_id=None, equity_usd=1, price=1))
+    with pytest.raises(IntegrityError):
+        await session.flush()
+
+
+async def test_emails_are_unique_ignoring_case(session):
+    session.add(Player(nickname="a", email="x@y.com"))
+    await session.flush()
+    session.add(Player(nickname="b", email="X@y.com"))
     with pytest.raises(IntegrityError):
         await session.flush()
 
