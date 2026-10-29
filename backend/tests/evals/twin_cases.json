@@ -7,7 +7,7 @@
   {"q": "رشته‌ی کارشناسی ارشدت چیست؟", "expect": "answer", "facts": [["هوش مصنوعی"]]},
   {"q": "Tell me about Behengam.", "expect": "answer", "facts": [["health"], ["12", "twelve"]]},
   {"q": "پروژه‌ی بهنگام چیست؟", "expect": "answer", "facts": [["سلامت"], ["۱۲", "12", "دوازده"]]},
-  {"q": "What was Behengam called before?", "expect": "answer", "facts": [["Azmanegar"]]},
+  {"q": "How did Behengam start?", "expect": "answer", "facts": [["assistant"], ["doctor", "physician"]]},
   {"q": "How many automated tests does Astra have?", "expect": "answer", "facts": [["407"]]},
   {"q": "پوشش تست پروژه‌ی Astra چقدر است؟", "expect": "answer", "facts": [["۹۳", "93"]]},
   {"q": "Have you worked with n8n?", "expect": "answer", "facts": [["n8n"]]},
