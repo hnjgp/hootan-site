@@ -14,7 +14,8 @@ const FRONDS = [
  */
 export function HeroScene({ tag, title, dir }: { tag: string; title: string; dir: "rtl" | "ltr" }) {
   return (
-    <div dir="ltr" className="relative w-full">
+    // On one-screen layouts the scene is capped by the free height, so it never runs below the fold.
+    <div dir="ltr" className="relative mx-auto w-full [container-type:inline-size] snap:max-w-[calc((100dvh-var(--head-h)-40px)*0.92)]">
       <div dir={dir} className="mb-2 px-2 text-start font-hand text-[30px] leading-none text-accent">
         {tag}
       </div>
@@ -29,7 +30,7 @@ export function HeroScene({ tag, title, dir }: { tag: string; title: string; dir
           />
         </svg>
         <div dir={dir} className="relative text-center">
-          <h1 className="text-[clamp(20px,2.3vw,29px)] leading-[1.45] font-semibold whitespace-pre-line">{title}</h1>
+          <h1 className="text-[clamp(18px,4.9cqw,29px)] leading-[1.45] font-semibold whitespace-pre-line">{title}</h1>
         </div>
       </div>
 

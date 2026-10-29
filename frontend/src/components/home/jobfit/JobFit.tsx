@@ -95,16 +95,16 @@ export function JobFit({ t, lang }: { t: Dictionary["jobfit"]; lang: Locale }) {
           </div>
 
           {!result && (
-            <div aria-hidden="true" className="grid min-h-0 flex-1 gap-4 opacity-60 sm:grid-cols-2">
+            <div aria-hidden="true" className="grid min-h-0 flex-1 auto-rows-[minmax(0,1fr)] gap-4 opacity-60 sm:grid-cols-2">
               {[
                 [t.strengths, "text-green"],
                 [t.gaps, "text-accent"],
                 [t.ask, "", "sm:col-span-2"],
               ].map(([title, color, span]) => (
-                <div key={title} className={`flex flex-col gap-2.5 border-dashed ${card} ${span}`}>
+                <div key={title} className={`flex min-h-0 flex-col gap-2.5 overflow-hidden border-dashed ${card} ${span}`}>
                   <div className={`${hand} ${color}`}>{title}</div>
                   {[80, 60, 70].map((w) => (
-                    <div key={w} className="h-2.5 rounded-full bg-soft" style={{ width: `${w}%` }} />
+                    <div key={w} className="h-2.5 flex-none rounded-full bg-soft" style={{ width: `${w}%` }} />
                   ))}
                 </div>
               ))}
