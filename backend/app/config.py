@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     model_twin: str = "gemini-2.5-flash-lite"
     model_jobfit: str = "gpt-4.1-mini"
     model_trading: str = "gpt-5-nano"
-    model_translate: str = "gpt-4.1-mini"
+    model_translate: str = "gpt-4.1-nano"
     model_embed: str = "text-embedding-3-small"
 
     budget_monthly_usd: Decimal = Decimal(5)

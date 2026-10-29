@@ -67,6 +67,7 @@ class LLMClient:
         max_tokens: int,
         schema: type[T],
         temperature: float | None = None,
+        timeout: float | None = None,
     ) -> tuple[T, Completion]:
         """Return the reply parsed into `schema` and its Completion.
 
@@ -74,6 +75,7 @@ class LLMClient:
         validation, so a bad reply still counts toward the budget. Through AvalAI,
         Gemini ignored the schema while OpenAI models followed it (probe, 2026-10-26).
         Reasoning models (gpt-5 family) reject temperature, so it is optional.
+        `timeout` replaces the client's 30 seconds for this call.
         """
         await check_budget(session, feature, self.settings)
         extra = {
@@ -88,6 +90,8 @@ class LLMClient:
         }
         if temperature is not None:
             extra["temperature"] = temperature
+        if timeout is not None:
+            extra["timeout"] = timeout
         result = await self._complete(model, messages, max_tokens, **extra)
         await self._record(session, feature, model, result)
         return schema.model_validate_json(result.text), result

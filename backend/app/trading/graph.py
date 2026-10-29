@@ -4,7 +4,7 @@ Each node saves its event right away, so the first visitor can watch live.
 """
 
 import operator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Annotated, TypedDict
 
@@ -19,6 +19,7 @@ from app.trading import prompts
 from app.trading.portfolio import Portfolio
 from app.trading.risk import Order, apply_pm, check_proposal
 from app.trading.schema import PMDecision, TraderProposal
+from app.trading.translate import translate_line
 
 MAX_TOKENS = 250
 NAMES = {
@@ -34,12 +35,14 @@ NAMES = {
 
 @dataclass
 class Meeting:
-    """Run-scoped context: database, LLM client, the session row and the event counter."""
+    """Run-scoped context: database, LLM client, the session row, the event counter
+    and the (English, Persian) lines so far, which keep the translation consistent."""
 
     db: AsyncSession
     llm: LLMClient
     row: TradingSession
     seq: int = 0
+    translated: list[tuple[str, str]] = field(default_factory=list)
 
 
 class State(TypedDict, total=False):
@@ -61,7 +64,10 @@ async def record(
     text: str,
     payload: dict | None = None,
 ) -> list[str]:
-    """Save one event and commit it for live viewers; return its transcript line."""
+    """Translate one event, save and commit it for live viewers; return its transcript line."""
+    fa = await translate_line(m.db, m.llm, text, m.translated)
+    if fa:
+        m.translated.append((text, fa))
     m.seq += 1
     m.db.add(
         SessionEvent(
@@ -70,6 +76,7 @@ async def record(
             agent=agent,
             kind=kind,
             text_en=text,
+            text_fa=fa,
             payload=payload,
         )
     )

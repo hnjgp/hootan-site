@@ -1,28 +1,28 @@
-"""Persian text of a finished meeting: one call translates every event at once.
+"""Persian text of each meeting line, translated as soon as the line is spoken.
 
-Translation is optional: if it fails, text_fa stays empty and the site shows English.
-gpt-5-nano returned the English unchanged in one of two real calls, with the right
-count (probe, 2026-10-27), so every text must contain Persian letters.
+The first visitor watches the meeting live, so every line needs its Persian before it
+is saved. Earlier lines and their translations go along as context, so terms stay the
+same through the meeting. Translation is optional: if it fails, text_fa stays empty
+and the site shows English. gpt-5-nano returned the English unchanged in a real call
+(probe, 2026-10-27), so the reply must contain Persian letters.
 """
-
-import json
 
 from openai import APIError
 from pydantic import BaseModel, ValidationError
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import SessionEvent
 from app.llm.budget import BudgetExceeded
 from app.llm.client import LLMClient
 
-# Persian needs more tokens than English; a meeting is about 7 short texts.
-MAX_TOKENS = 2000
+MAX_TOKENS = 400
+# A healthy reply takes under 3 seconds; AvalAI connections sometimes hang for 20 to
+# 30 seconds (probe, 2026-10-29), so a hung call is dropped early and retried.
+TIMEOUT = 10
 SYSTEM = (
-    "You translate the transcript of an AI trading team's meeting into fluent, "
-    "natural Persian (Farsi) for a general audience. Translate each text in the "
-    "JSON list on its own and return exactly one translation per text, in the same "
-    "order. Keep numbers exactly as written. Keep BTC, USDT and RSI in Latin letters."
+    "You translate lines of an AI trading team's meeting into fluent, natural "
+    "Persian (Farsi) for a general audience, one line at a time, using the same "
+    "terms as your earlier translations. Keep numbers exactly as written. "
+    "Keep BTC, USDT and RSI in Latin letters."
 )
 
 
@@ -32,34 +32,34 @@ def is_persian(text: str) -> bool:
 
 
 class Translation(BaseModel):
-    """Persian texts, one per input text, in the same order."""
+    """The Persian text of one line."""
 
-    texts: list[str]
+    text: str
 
 
-async def translate_session(db: AsyncSession, llm: LLMClient, session_id: int) -> bool:
-    """Fill text_fa of every event of the session; return False if it was skipped."""
-    events = list(
-        await db.scalars(
-            select(SessionEvent)
-            .where(SessionEvent.session_id == session_id)
-            .order_by(SessionEvent.seq)
-        )
-    )
-    messages = [
-        {"role": "system", "content": SYSTEM},
-        {"role": "user", "content": json.dumps([e.text_en for e in events])},
-    ]
+async def translate_line(
+    db: AsyncSession, llm: LLMClient, text: str, before: list[tuple[str, str]]
+) -> str | None:
+    """Persian of `text`, with earlier (English, Persian) pairs as context; None on failure."""
+    messages = [{"role": "system", "content": SYSTEM}]
+    for en, fa in before:
+        messages += [
+            {"role": "user", "content": en},
+            {"role": "assistant", "content": Translation(text=fa).model_dump_json()},
+        ]
+    messages.append({"role": "user", "content": text})
     model = llm.settings.model_translate
     try:
         reply, _ = await llm.structured(
-            db, "trading", model, messages, MAX_TOKENS, Translation, temperature=0
+            db,
+            "trading",
+            model,
+            messages,
+            MAX_TOKENS,
+            Translation,
+            temperature=0,
+            timeout=TIMEOUT,
         )
     except (ValidationError, BudgetExceeded, APIError):
-        return False
-    if len(reply.texts) != len(events) or not all(map(is_persian, reply.texts)):
-        return False
-    for event, text in zip(events, reply.texts):
-        event.text_fa = text
-    await db.commit()
-    return True
+        return None
+    return reply.text if is_persian(reply.text) else None

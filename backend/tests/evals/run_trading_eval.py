@@ -155,7 +155,7 @@ async def main() -> None:
         f"- Invalid model replies (turned into HOLD by code): {invalid}",
         "- Trader proposals: "
         + ", ".join(f"{a} {actions[a]}" for a in ("BUY", "SELL", "HOLD", "invalid")),
-        f"- Cost of this run: ${total:.6f} (${total / RUNS:.6f} per meeting, no translation)",
+        f"- Cost of this run: ${total:.6f} (${total / RUNS:.6f} per meeting, with translation)",
     ]
     print("\n".join(summary))
     report = [

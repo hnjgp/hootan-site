@@ -21,7 +21,6 @@ from app.llm.client import LLMClient
 from app.trading.graph import run_meeting
 from app.trading.market import market_snapshot
 from app.trading.portfolio import load_portfolio
-from app.trading.translate import translate_session
 
 log = logging.getLogger("trading")
 DAY_START = timedelta(hours=9)
@@ -89,7 +88,7 @@ async def hold_meeting(
     row: TradingSession,
     load_market: Callable[[AsyncSession], Awaitable[dict]] = market_snapshot,
 ) -> TradingSession:
-    """Meeting, trade and translation for `row`; ends as done, skipped or failed.
+    """Meeting and trade for `row`; ends as done, skipped or failed.
 
     Skipped means the trading budget was used up; the previous meeting is replayed.
     """
@@ -101,7 +100,6 @@ async def hold_meeting(
         market = await load_market(db)
         portfolio = await load_portfolio(db)
         await run_meeting(db, llm, row, market, portfolio)
-        await translate_session(db, llm, row.id)
         row.status = "done"
     except BudgetExceeded:
         await db.rollback()

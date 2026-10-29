@@ -21,6 +21,7 @@ MARKET = {
 }
 TRADER = {"reason": "Oversold.", "action": "BUY", "size_pct": 100}
 PM = {"reason": "Approved.", "approve": True, "stop_loss_pct": 3}
+FA = json.dumps({"text": "متن"})
 
 
 async def new_session(session) -> TradingSession:
@@ -41,7 +42,20 @@ async def test_full_meeting_records_every_speaker_and_trades_within_the_rules(
     row = await new_session(session)
     client = FakeLLMClient(
         SETTINGS,
-        replies=["Buy.", "Wait.", json.dumps(TRADER), "Cut to 20%.", json.dumps(PM)],
+        replies=[
+            FA,
+            FA,
+            "Buy.",
+            FA,
+            "Wait.",
+            FA,
+            json.dumps(TRADER),
+            FA,
+            "Cut to 20%.",
+            FA,
+            json.dumps(PM),
+            FA,
+        ],
     )
 
     order = await run_meeting(session, client, row, MARKET, Portfolio())
@@ -51,6 +65,7 @@ async def test_full_meeting_records_every_speaker_and_trades_within_the_rules(
         "data", "news", "bull", "bear", "trader", "risk", "pm",
     ]  # fmt: skip
     assert [e.seq for e in recorded] == list(range(1, 8))
+    assert [e.text_fa for e in recorded] == ["متن"] * 7
     assert recorded[0].payload == MARKET
     assert "20%" in recorded[5].payload["notes"][0]
 
@@ -69,16 +84,33 @@ async def test_full_meeting_records_every_speaker_and_trades_within_the_rules(
 
 
 async def test_invalid_trader_reply_holds_without_asking_the_pm(session):
+    """A failed translation leaves that line English and the meeting goes on."""
     row = await new_session(session)
     client = FakeLLMClient(
-        SETTINGS, replies=["Buy.", "Wait.", "not json", "Nothing to check."]
+        SETTINGS,
+        replies=[
+            FA,
+            FA,
+            "Buy.",
+            "not json",
+            "Wait.",
+            FA,
+            "not json",
+            FA,
+            "Nothing to check.",
+            FA,
+            FA,
+        ],
     )
 
     order = await run_meeting(session, client, row, MARKET, Portfolio())
 
     assert order.action == "HOLD"
     assert client.replies == []
-    assert len(client.calls) == 4
+    assert len(client.calls) == 11
     assert await session.scalar(select(PortfolioTrade)) is None
     assert (row.decision, row.qty) == ("HOLD", None)
-    assert (await events(session, row))[-1].agent == "pm"
+    recorded = await events(session, row)
+    assert recorded[-1].agent == "pm"
+    assert recorded[2].text_fa is None
+    assert recorded[3].text_fa == "متن"

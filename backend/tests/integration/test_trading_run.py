@@ -25,13 +25,20 @@ MARKET = {
     "sma_7": 81074.0,
     "sma_30": 82736.0,
 }
+FA = json.dumps({"text": "متن"})
 REPLIES = [
+    FA,
+    FA,
     "Buy.",
+    FA,
     "Wait.",
+    FA,
     json.dumps({"reason": "Oversold.", "action": "BUY", "size_pct": 10}),
+    FA,
     "Within limits.",
+    FA,
     json.dumps({"reason": "Approved.", "approve": True, "stop_loss_pct": 5}),
-    json.dumps({"texts": ["متن"] * 7}),
+    FA,
 ]
 
 
