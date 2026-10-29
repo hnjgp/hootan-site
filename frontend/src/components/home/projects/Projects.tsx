@@ -5,9 +5,10 @@ import type { Dictionary, Locale } from "@/i18n";
 import { ASTRA } from "./diagrams/Astra";
 import { BEHENGAM } from "./diagrams/Behengam";
 import { NOTES } from "./diagrams/Notes";
+import { PRICE } from "./diagrams/Price";
 import { SITE } from "./diagrams/Site";
 
-const IDS = ["astra", "notes", "behengam", "site"] as const;
+const IDS = ["astra", "notes", "price", "behengam", "site"] as const;
 type Id = (typeof IDS)[number];
 type T = Dictionary["projects"];
 
@@ -16,14 +17,16 @@ const PROFILE = "https://github.com/hnjgp";
 const REPOS: Record<Id, string | null> = {
   astra: "https://github.com/hnjgp/astra-ai-platform",
   notes: "https://github.com/hnjgp/ai-medical-notes-saas",
+  price: "https://github.com/hnjgp/price-estimate",
   behengam: null,
   site: "https://github.com/hnjgp/hootan-site",
 };
 
-/** Line icons: an agent graph, a note, a pulse line and a browser window. */
+/** Line icons: an agent graph, a note, a price tag, a pulse line and a browser window. */
 const ICONS: Record<Id, string> = {
   astra: "M6 6h.01M18 6h.01M12 18h.01M6 6l6 12 6-12M6 6h12",
   notes: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 15h5M10 18h3",
+  price: "M3 12V3h9l9 9-9 9zM7.5 7.5h.01",
   behengam: "M3 12h4l2-5 4 10 2-5h6",
   site: "M3 5h18v14H3zM3 9h18M6 7h.01M9 7h.01",
 };
@@ -65,6 +68,10 @@ function Diagram({
     const C = NOTES[name as keyof typeof NOTES];
     return <C d={t.items.notes.d} />;
   }
+  if (id === "price") {
+    const C = PRICE[name as keyof typeof PRICE];
+    return <C d={t.items.price.d} />;
+  }
   if (id === "behengam") {
     const C = BEHENGAM[name as keyof typeof BEHENGAM];
     return <C d={t.items.behengam.d} />;
@@ -92,7 +99,8 @@ function Detail({
   const repo = REPOS[id];
 
   useEffect(() => {
-    closeButton.current?.focus();
+    // A scrolling focus would cut short the smooth scroll to the section.
+    closeButton.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
@@ -206,8 +214,8 @@ function Detail({
 }
 
 /**
- * Projects: four cards with a short description; a card opens its full story in a large box
- * in their place. Links to `#project-<id>` (like the hero's "How I built this site") open one directly.
+ * Projects: five cards with a short description and a "more soon" note in the sixth cell; a card
+ * opens its full story in a large box in their place. Links to `#project-<id>` (like the hero's "How I built this site") open one directly.
  */
 export function Projects({
   t,
@@ -251,23 +259,14 @@ export function Projects({
 
   return (
     <div className="flex min-h-0 flex-col snap:h-full">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div>
-          <div className="font-hand text-[24px] leading-none text-accent">
-            {t.tag}
-          </div>
-          <h2 className="mt-1 mb-1.5 text-[30px] leading-[1.15] font-bold sm:text-[34px]">
-            {t.h2}
-          </h2>
-          <p className="m-0 text-[15px] leading-[1.7] text-muted">{t.sub}</p>
+      <div className="mb-4">
+        <div className="font-hand text-[24px] leading-none text-accent">
+          {t.tag}
         </div>
-        <div className="flex items-center gap-2 rounded-full border-[1.5px] border-dashed border-line px-4 py-2 text-[13.5px] font-semibold">
-          <span
-            aria-hidden="true"
-            className="pulse h-2 w-2 flex-none rounded-full bg-orange"
-          />
-          {t.soon}
-        </div>
+        <h2 className="mt-1 mb-1.5 text-[30px] leading-[1.15] font-bold sm:text-[34px]">
+          {t.h2}
+        </h2>
+        <p className="m-0 text-[15px] leading-[1.7] text-muted">{t.sub}</p>
       </div>
 
       {open ? (
@@ -280,7 +279,7 @@ export function Projects({
           onClose={close}
         />
       ) : (
-        <div className="grid min-h-0 flex-1 gap-4 sm:grid-cols-2 snap:auto-rows-[minmax(0,1fr)]">
+        <div className="grid min-h-0 flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 snap:auto-rows-[minmax(0,1fr)]">
           {IDS.map((id, k) => {
             const p = t.items[id];
             return (
@@ -300,7 +299,7 @@ export function Projects({
                     <span className="text-[19px] leading-tight font-bold">
                       {p.title}
                     </span>
-                    <span className="truncate text-[13px] text-muted">
+                    <span className="text-[13px] leading-snug text-muted">
                       {p.kind}
                     </span>
                   </span>
@@ -308,7 +307,7 @@ export function Projects({
                     {p.status}
                   </span>
                 </span>
-                <span className="line-clamp-3 text-[14px] leading-[1.65] text-muted">
+                <span className="line-clamp-4 text-[14px] leading-[1.65] text-muted">
                   {p.short}
                 </span>
                 <span className="mt-auto flex w-full items-center justify-between gap-3">
@@ -324,6 +323,16 @@ export function Projects({
               </button>
             );
           })}
+          <div
+            className="pop flex min-h-[120px] items-center justify-center gap-2.5 rounded-[20px] border-2 border-dashed border-line p-5 text-center text-[15px] font-semibold text-muted"
+            style={{ animationDelay: `${IDS.length * 0.08}s` }}
+          >
+            <span
+              aria-hidden="true"
+              className="pulse h-2.5 w-2.5 flex-none rounded-full bg-orange"
+            />
+            {t.soon}
+          </div>
         </div>
       )}
     </div>
