@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Dictionary, Locale } from "@/i18n";
+import { latinDigits } from "@/lib/digits";
 import { useMeeting } from "./useMeeting";
 
 /** Each agent's window on office_idle.jpg in percent: left, top, width, height (CLAUDE.md 15.7). */
@@ -23,6 +24,24 @@ const indexOf = (agent: string) =>
     0,
   );
 
+/** A number in the intro, boxed so it stands out from the sentence. */
+function Num({
+  children,
+  tone = "text-ink",
+}: {
+  children: string;
+  tone?: string;
+}) {
+  return (
+    <span
+      dir="ltr"
+      className={`inline-block rounded-md border-[1.5px] border-line px-1.5 font-mono text-[14px] leading-[1.5] font-bold whitespace-nowrap ${tone}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 /** Trading floor: the team's money, the building with the speaking agent, and the meeting's dialog beside it. */
 export function Trading({
   t,
@@ -33,7 +52,7 @@ export function Trading({
 }) {
   const { summary: s, events, live, done, failed, start } = useMeeting();
   const dialog = useRef<HTMLDivElement>(null);
-  const loc = lang === "fa" ? "fa-IR" : "en-US";
+  const loc = lang === "fa" ? "fa-IR-u-nu-latn" : "en-US";
 
   useEffect(() => {
     dialog.current?.scrollTo({
@@ -51,9 +70,12 @@ export function Trading({
       new Intl.NumberFormat(loc, {
         signDisplay: "always",
         maximumFractionDigits: 2,
-      }).format(n) + (lang === "fa" ? "٪" : "%")
+      }).format(n) + "%"
     );
   };
+  const tone = (v: string) =>
+    Number(v) < Number(s!.start_usd) ? "text-accent" : "text-green";
+  const [before, after] = t.started.split("{start}");
   const day = (d: string) =>
     new Date(d + "T12:00:00").toLocaleDateString(loc, {
       day: "numeric",
@@ -102,26 +124,12 @@ export function Trading({
         {t.sub}{" "}
         {s && (
           <>
-            {t.started}{" "}
-            <span
-              dir="ltr"
-              className="font-mono font-bold whitespace-nowrap text-ink"
-            >
-              {usd(s.value_usd)}{" "}
-              <span
-                className={
-                  Number(s.value_usd) < Number(s.start_usd)
-                    ? "text-accent"
-                    : "text-green"
-                }
-              >
-                ({change(s.value_usd)})
-              </span>
-            </span>{" "}
-            {t.has} {t.hold}{" "}
-            <span dir="ltr" className="font-mono whitespace-nowrap text-ink">
-              {usd(s.hold_usd)} ({change(s.hold_usd)})
-            </span>
+            {before}
+            <Num>{usd(s.start_usd).slice(1)}</Num>
+            {after} <Num>{usd(s.value_usd)}</Num>{" "}
+            <Num tone={tone(s.value_usd)}>{change(s.value_usd)}</Num> {t.has}{" "}
+            {t.hold} <Num>{usd(s.hold_usd)}</Num>{" "}
+            <Num tone={tone(s.hold_usd)}>{change(s.hold_usd)}</Num>
           </>
         )}
       </p>
@@ -221,7 +229,9 @@ export function Trading({
                   className={`m-0 rounded-[12px] rounded-ss-[4px] border-[1.5px] px-3 py-1 text-[13.5px] leading-[1.5] ${k === events.length - 1 && !done ? "border-orange" : "border-line"}`}
                 >
                   <b>{t.agents[indexOf(e.agent)]}:</b>{" "}
-                  {firstSentence((lang === "fa" && e.text_fa) || e.text_en)}
+                  {latinDigits(
+                    firstSentence((lang === "fa" && e.text_fa) || e.text_en),
+                  )}
                 </p>
               </div>
             ))}

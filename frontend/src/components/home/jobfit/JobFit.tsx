@@ -14,7 +14,7 @@ export function JobFit({ t, lang }: { t: Dictionary["jobfit"]; lang: Locale }) {
   const { busy, word, result, note, check } = useJobFit(t, lang);
   const [ad, setAd] = useState("");
   const short = ad.trim().length < MIN;
-  const num = (n: number) => n.toLocaleString(lang === "fa" ? "fa-IR" : "en-US");
+  const num = (n: number) => n.toLocaleString(lang === "fa" ? "fa-IR-u-nu-latn" : "en-US");
 
   const card = "rounded-2xl border-[1.5px] border-line p-5";
   const hand = lang === "fa" ? "text-[17px] font-bold" : "font-hand text-[23px]";

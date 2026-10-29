@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Dictionary, Locale } from "@/i18n";
+import { latinDigits } from "@/lib/digits";
 
 export type FitResult = {
   strengths: { point: string; evidence: string }[];
@@ -37,7 +38,7 @@ export function useJobFit(t: Dictionary["jobfit"], lang: Locale) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ job_ad: ad, lang }),
       });
-      if (res.ok) setResult(await res.json());
+      if (res.ok) setResult(JSON.parse(latinDigits(await res.text())));
       else setNote(res.status === 429 ? t.limit : res.status === 503 ? t.off : t.error);
     } catch {
       setNote(t.error);

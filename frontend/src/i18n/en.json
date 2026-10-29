@@ -230,7 +230,7 @@
       "proposes a trade",
       "makes the final call"
     ],
-    "started": "The team started with 100,000 virtual dollars and now has",
+    "started": "The team started with {start} virtual dollars and now has",
     "hold": "Had it just bought Bitcoin and held:",
     "ch2": "Last meeting",
     "final": "Final decision",

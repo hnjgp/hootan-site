@@ -42,7 +42,7 @@ export function ScoreRing({ score, of, lang }: { score: number | null; of: strin
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-[36px] leading-none font-bold">{score === null ? "—" : value.toLocaleString(lang === "fa" ? "fa-IR" : "en-US")}</div>
+        <div className="text-[36px] leading-none font-bold">{score === null ? "—" : value.toLocaleString(lang === "fa" ? "fa-IR-u-nu-latn" : "en-US")}</div>
         <div className="mt-1 text-[12px] text-muted">{of}</div>
       </div>
     </div>

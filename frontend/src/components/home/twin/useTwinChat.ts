@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n";
+import { latinDigits } from "@/lib/digits";
 import { sseParser } from "@/lib/sse";
 
 export type Phase = "listen" | "search" | "think" | "talk";
@@ -64,6 +65,7 @@ export function useTwinChat(t: Dictionary["twin"]) {
     } else if (name === "status" && d.state === "answering") {
       enter("think");
     } else if (name === "token") {
+      d.text = latinDigits(d.text);
       const open = answerOpen.current;
       answerOpen.current = true;
       setMsgs((list) =>
