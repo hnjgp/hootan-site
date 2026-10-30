@@ -8,9 +8,32 @@ const FRONDS = [
   "M96 78C120 78 138 90 144 110C130 96 116 88 96 78Z",
 ];
 
+/** Night sky: x, y and size of each star, kept clear of the thought cloud and the palm. */
+const STARS = [
+  [300, 40, 0.8],
+  [356, 88, 1.1],
+  [418, 52, 0.9],
+  [508, 70, 0.7],
+  [252, 150, 0.7],
+  [380, 160, 0.9],
+  [438, 96, 0.6],
+  [24, 40, 0.8],
+] as const;
+
+/** The moon's reflection on the sea: a column of short glints, narrower further down. */
+const GLINTS = [
+  [206, 34],
+  [218, 26],
+  [232, 30],
+  [246, 18],
+  [262, 22],
+  [278, 12],
+] as const;
+
 /**
  * The hero drawing: Hootan sits under a palm by the sea typing on a laptop; the headline
- * is his thought cloud. Waves, small clouds, the palm and his hands move with CSS only.
+ * is his thought cloud. Waves, small clouds, the palm and his hands move with CSS only;
+ * in the dark theme a moon, its reflection and twinkling stars replace the sun.
  */
 export function HeroScene({ tag, title, dir }: { tag: string; title: string; dir: "rtl" | "ltr" }) {
   return (
@@ -39,15 +62,32 @@ export function HeroScene({ tag, title, dir }: { tag: string; title: string; dir
           <clipPath id="sea">
             <rect x="0" y="196" width="520" height="104" />
           </clipPath>
+          <mask id="crescent">
+            <circle cx="478" cy="120" r="20" fill="white" />
+            <circle cx="488" cy="113" r="17" fill="black" />
+          </mask>
         </defs>
         <g fill="none" stroke={INK} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <g className="sun-rays" style={{ transformOrigin: "478px 120px" }}>
-            {Array.from({ length: 8 }, (_, i) => {
-              const a = (i * Math.PI) / 4;
-              return <path key={i} d={`M${478 + Math.cos(a) * 26} ${120 + Math.sin(a) * 26}L${478 + Math.cos(a) * 36} ${120 + Math.sin(a) * 36}`} stroke="var(--orange)" strokeWidth="3" />;
-            })}
+          <g className="day-only">
+            <g className="sun-rays" style={{ transformOrigin: "478px 120px" }}>
+              {Array.from({ length: 8 }, (_, i) => {
+                const a = (i * Math.PI) / 4;
+                return <path key={i} d={`M${478 + Math.cos(a) * 26} ${120 + Math.sin(a) * 26}L${478 + Math.cos(a) * 36} ${120 + Math.sin(a) * 36}`} stroke="var(--orange)" strokeWidth="3" />;
+              })}
+            </g>
+            <circle cx="478" cy="120" r="18" fill="var(--orange)" />
           </g>
-          <circle cx="478" cy="120" r="18" fill="var(--orange)" />
+          <g className="night-only">
+            <g className="moon-float">
+              <circle className="moon-glow" cx="478" cy="120" r="34" fill="#FFD27A" fillOpacity="0.25" stroke="none" />
+              <circle cx="478" cy="120" r="20" fill="#F3E3B0" mask="url(#crescent)" />
+            </g>
+            <g className="stars" stroke="none" fill="#FFD27A">
+              {STARS.map(([x, y, r], k) => (
+                <path key={x} className="twinkle" style={{ animationDelay: `${k * 0.45}s` }} transform={`translate(${x} ${y}) scale(${r})`} d="M0 -9L2.2 -2.2L9 0L2.2 2.2L0 9L-2.2 2.2L-9 0L-2.2 -2.2Z" />
+              ))}
+            </g>
+          </g>
           <g className="drift-slow">
             <path d="M320 128h52a9 9 0 0 0-3-17 13 13 0 0 0-23-4 10 10 0 0 0-18 5 8 8 0 0 0-8 16z" fill="var(--card)" />
           </g>
@@ -61,6 +101,11 @@ export function HeroScene({ tag, title, dir }: { tag: string; title: string; dir
               <path d="M150 216q15-9 30 0t30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0" />
               <path d="M120 240q15-7 30 0t30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0" strokeWidth="1.5" />
               <path d="M150 266q15-7 30 0t30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0 30 0" strokeWidth="1.2" />
+            </g>
+            <g className="night-only" stroke="#F3E3B0" strokeWidth="3">
+              {GLINTS.map(([y, w], k) => (
+                <path key={y} className="twinkle" style={{ animationDelay: `${k * 0.3}s` }} d={`M${478 - w / 2} ${y}h${w}`} />
+              ))}
             </g>
           </g>
           <path d="M0 236C70 222 170 222 250 246C300 262 330 300 330 300H0z" fill="var(--bg)" />

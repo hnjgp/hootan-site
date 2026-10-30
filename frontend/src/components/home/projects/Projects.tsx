@@ -1,5 +1,6 @@
 "use client";
 
+import { Underlined } from "@/components/HandUnderline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dictionary, Locale } from "@/i18n";
 import { ASTRA } from "./diagrams/Astra";
@@ -9,6 +10,8 @@ import { PRICE } from "./diagrams/Price";
 import { SITE } from "./diagrams/Site";
 
 const IDS = ["astra", "notes", "price", "behengam", "site"] as const;
+/** Each card floats on its own clock. */
+const FLOATS = ["float-a", "float-b", "float-c"];
 type Id = (typeof IDS)[number];
 type T = Dictionary["projects"];
 
@@ -264,7 +267,7 @@ export function Projects({
           {t.tag}
         </div>
         <h2 className="mt-1 mb-1.5 text-[30px] leading-[1.15] font-bold sm:text-[34px]">
-          {t.h2}
+          <Underlined>{t.h2}</Underlined>
         </h2>
         <p className="m-0 text-[15px] leading-[1.7] text-muted">{t.sub}</p>
       </div>
@@ -290,7 +293,7 @@ export function Projects({
                   opener.current = e.currentTarget;
                   show(id);
                 }}
-                className="btn pop group flex min-h-0 flex-col gap-2.5 overflow-hidden rounded-[20px] border-2 border-line bg-card p-4 text-start text-ink shadow-[5px_5px_0_var(--line)] sm:p-5"
+                className={`btn pop ${FLOATS[k % 3]} group flex min-h-0 flex-col gap-2.5 overflow-hidden rounded-[20px] border-2 border-line bg-card p-4 text-start text-ink shadow-[5px_5px_0_var(--line)] sm:p-5`}
                 style={{ animationDelay: `${k * 0.08}s` }}
               >
                 <span className="flex w-full items-center gap-3">

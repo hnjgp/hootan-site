@@ -1,8 +1,10 @@
 "use client";
 
+import { Underlined } from "@/components/HandUnderline";
 import { useEffect, useRef } from "react";
 import type { Dictionary, Locale } from "@/i18n";
 import { latinDigits } from "@/lib/digits";
+import { NightSky } from "./NightSky";
 import { useMeeting } from "./useMeeting";
 
 /** Each agent's window on office_idle.jpg in percent: left, top, width, height (CLAUDE.md 15.7). */
@@ -118,7 +120,7 @@ export function Trading({
   return (
     <div className="flex min-h-0 flex-col snap:h-full">
       <h2 className="m-0 text-[30px] leading-[1.15] font-bold sm:text-[34px]">
-        {t.h2}
+        <Underlined>{t.h2}</Underlined>
       </h2>
       <p className="mt-1.5 mb-3 text-[15px] leading-[1.7] text-muted">
         {t.sub}{" "}
@@ -140,7 +142,7 @@ export function Trading({
           <a
             href="#play"
             dir="ltr"
-            className="relative block aspect-[1672/941] w-full overflow-hidden rounded-[20px] border-2 border-line bg-paper shadow-[5px_5px_0_var(--line)] snap:aspect-auto snap:min-h-0 snap:flex-1 snap:[container-type:size]"
+            className="float-a relative block aspect-[1672/941] w-full overflow-hidden rounded-[20px] border-2 border-line bg-paper shadow-[5px_5px_0_var(--line)] snap:aspect-auto snap:min-h-0 snap:flex-1 snap:[container-type:size]"
           >
             <div className="absolute inset-0 snap:inset-auto snap:top-1/2 snap:left-1/2 snap:aspect-[1672/941] snap:w-[min(max(100cqw,100cqh*1.7768),100cqw/0.62)] snap:-translate-x-1/2 snap:-translate-y-1/2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -162,6 +164,7 @@ export function Trading({
                   height: `${height}%`,
                 }}
               />
+              <NightSky />
             </div>
             <span className="absolute top-2.5 left-2.5 flex items-center gap-2 rounded-full bg-[#1e1c1a] px-3 py-1 text-[13px] font-semibold text-[#f3ebdd]">
               <span
@@ -192,7 +195,7 @@ export function Trading({
           </div>
         </div>
 
-        <div className="flex min-h-[420px] flex-col overflow-hidden rounded-[20px] border-2 border-line bg-card shadow-[5px_5px_0_var(--line)] md:min-h-0">
+        <div className="float-b flex min-h-[420px] flex-col overflow-hidden rounded-[20px] border-2 border-line bg-card shadow-[5px_5px_0_var(--line)] md:min-h-0">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b-[1.5px] border-line px-4 py-2">
             <h3 className="m-0 text-[17px] font-bold">
               {today ? t.todayTitle : t.ch2}

@@ -19,6 +19,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
     <AuthProvider>
       <Header lang={lang} t={t.header} auth={t.auth} />
       <SectionScroller />
+      <div className="scroll-progress" aria-hidden="true" />
       <main>
         <Hero lang={lang} t={t.main} game={t.game} />
         {SECTION_IDS.map((id) => (

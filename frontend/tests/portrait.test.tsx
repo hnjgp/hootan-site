@@ -8,7 +8,7 @@ const t = getDictionary("fa").twin;
 afterEach(cleanup);
 
 function visible() {
-  return screen.getAllByRole("img", { hidden: true }).find((img) => img.style.opacity === "1")?.getAttribute("src");
+  return screen.getAllByRole("img", { hidden: true }).find((img) => img.parentElement!.style.opacity === "1")?.getAttribute("src");
 }
 
 test("listening shows the listening picture and label", () => {

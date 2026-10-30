@@ -1,10 +1,11 @@
 import type { Dictionary } from "@/i18n";
 import type { Phase } from "./useTwinChat";
+import { PANES, WindowView } from "./WindowView";
 
-const IMAGES = ["me_listen", "me_think", "me_talk"];
+const IMAGES = ["me_listen", "me_think", "me_talk"] as const;
 const IMAGE_OF: Record<Phase, number> = { listen: 0, search: 1, think: 1, talk: 2 };
 
-/** Hootan at the desk; the picture and the label follow the chat phase. */
+/** Hootan at the desk; the picture and the label follow the chat phase, and the window shows day or night with the theme. */
 export function Portrait({ t, phase, word, file }: { t: Dictionary["twin"]; phase: Phase; word: number; file?: string }) {
   const shown = IMAGE_OF[phase];
   const words = phase === "listen" ? null : t.words[phase];
@@ -14,15 +15,11 @@ export function Portrait({ t, phase, word, file }: { t: Dictionary["twin"]; phas
     <div className="relative aspect-square w-full overflow-hidden bg-paper snap:aspect-auto snap:h-full">
       <div className="breathe absolute inset-0 origin-[50%_80%]">
         {IMAGES.map((name, k) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={name}
-            src={`/assets/${name}.jpg`}
-            alt={k === shown ? t.alt[k] : ""}
-            aria-hidden={k !== shown}
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            style={{ opacity: k === shown ? 1 : 0 }}
-          />
+          <div key={name} className="absolute inset-0 transition-opacity duration-500" style={{ opacity: k === shown ? 1 : 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/assets/${name}.jpg`} alt={k === shown ? t.alt[k] : ""} aria-hidden={k !== shown} className="absolute inset-0 h-full w-full object-cover" />
+            <WindowView id={name} panes={PANES[name]} />
+          </div>
         ))}
       </div>
       <div className="absolute start-4 top-4 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-x-2.5 gap-y-1 rounded-2xl border-2 border-orange bg-[#1e1c1a] px-4 py-2.5 text-[20px] font-bold text-[#f3ebdd] shadow-[4px_4px_0_var(--orange)] sm:text-[22px]">

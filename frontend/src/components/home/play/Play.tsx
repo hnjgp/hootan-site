@@ -1,5 +1,6 @@
 "use client";
 
+import { Underlined } from "@/components/HandUnderline";
 import type { Dictionary, Locale } from "@/i18n";
 import { signedUsd } from "@/lib/digits";
 import { Leaderboard } from "./Leaderboard";
@@ -30,7 +31,9 @@ export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionar
     <div className="flex min-h-0 flex-col snap:h-full">
       <div className="mb-3">
         <div className="font-hand text-[24px] leading-none text-accent">{t.tag}</div>
-        <h2 className="mt-1 mb-1 text-[30px] leading-[1.15] font-bold sm:text-[34px]">{t.h2}</h2>
+        <h2 className="mt-1 mb-1 text-[30px] leading-[1.15] font-bold sm:text-[34px]">
+          <Underlined>{t.h2}</Underlined>
+        </h2>
         <p className="m-0 max-w-[860px] text-[15px] leading-[1.6] text-muted">{t.sub}</p>
       </div>
 

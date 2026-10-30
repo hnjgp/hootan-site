@@ -1,5 +1,6 @@
 "use client";
 
+import { Underlined } from "@/components/HandUnderline";
 import { useState } from "react";
 import { CONTACT } from "@/contact";
 import type { Dictionary, Locale } from "@/i18n";
@@ -23,7 +24,9 @@ export function JobFit({ t, lang }: { t: Dictionary["jobfit"]; lang: Locale }) {
   return (
     <div className="flex min-h-0 flex-col snap:h-full">
       <div className="font-hand text-[25px] text-accent">{t.tag}</div>
-      <h2 className="m-0 text-[30px] leading-[1.15] font-bold sm:text-[36px]">{t.h2}</h2>
+      <h2 className="m-0 text-[30px] leading-[1.15] font-bold sm:text-[36px]">
+        <Underlined>{t.h2}</Underlined>
+      </h2>
       <p className="mt-2 mb-5 max-w-[760px] text-[16px] leading-[1.6] text-muted">{t.sub}</p>
 
       <div className="flex flex-col gap-6 md:grid md:grid-cols-[minmax(320px,400px)_1fr] snap:min-h-0 snap:flex-1">
@@ -78,7 +81,7 @@ export function JobFit({ t, lang }: { t: Dictionary["jobfit"]; lang: Locale }) {
         </form>
 
         <section aria-label={t.resultLabel} aria-live="polite" className="flex min-h-0 min-w-0 flex-col gap-4">
-          <div className="flex flex-none flex-wrap items-center gap-[22px] rounded-[18px] border-2 border-line bg-card p-5 shadow-[5px_5px_0_var(--line)]">
+          <div className="flex flex-none flex-wrap items-center gap-[22px] float-c rounded-[18px] border-2 border-line bg-card p-5 shadow-[5px_5px_0_var(--line)]">
             <ScoreRing score={result?.score ?? null} of={t.of} lang={lang} />
             <div className="min-w-0 flex-[1_1_260px]">
               {note ? (

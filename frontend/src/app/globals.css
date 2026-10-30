@@ -309,20 +309,25 @@ a {
   }
 }
 
-.theme-sun {
+.theme-sun,
+.night-only {
   display: none;
 }
-:root[data-theme="dark"] .theme-sun {
+:root[data-theme="dark"] .theme-sun,
+:root[data-theme="dark"] .night-only {
   display: block;
 }
-:root[data-theme="dark"] .theme-moon {
+:root[data-theme="dark"] .theme-moon,
+:root[data-theme="dark"] .day-only {
   display: none;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-sun {
+  :root:not([data-theme="light"]) .theme-sun,
+  :root:not([data-theme="light"]) .night-only {
     display: block;
   }
-  :root:not([data-theme="light"]) .theme-moon {
+  :root:not([data-theme="light"]) .theme-moon,
+  :root:not([data-theme="light"]) .day-only {
     display: none;
   }
 }
@@ -394,12 +399,132 @@ a {
   }
 }
 
+/* Cards float gently on their own clocks; translate and rotate leave transform free for hover and pop. */
+.float-a {
+  animation: float-a 7s ease-in-out infinite;
+}
+.float-b {
+  animation: float-b 8.5s ease-in-out infinite;
+}
+.float-c {
+  animation: float-c 6.2s ease-in-out infinite;
+}
+.pop.float-a {
+  animation:
+    pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both,
+    float-a 7s ease-in-out 0.35s infinite;
+}
+.pop.float-b {
+  animation:
+    pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both,
+    float-b 8.5s ease-in-out 0.35s infinite;
+}
+.pop.float-c {
+  animation:
+    pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both,
+    float-c 6.2s ease-in-out 0.35s infinite;
+}
+@keyframes float-a {
+  50% {
+    translate: 0 -5px;
+    rotate: -0.4deg;
+  }
+}
+@keyframes float-b {
+  50% {
+    translate: 0 -6px;
+    rotate: 0.35deg;
+  }
+}
+@keyframes float-c {
+  50% {
+    translate: 0 -4px;
+    rotate: -0.25deg;
+  }
+}
+
+/* Orange progress bar on top of the page, and the hand-drawn line under section titles, both follow the scroll. */
+.scroll-progress {
+  display: none;
+}
+.hand-underline path {
+  stroke-dasharray: 100;
+  animation: draw 1.2s ease-out both;
+}
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    display: block;
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 40;
+    height: 4px;
+    background: var(--orange);
+    transform-origin: var(--grow-from);
+    animation: grow linear both;
+    animation-timeline: scroll(root);
+  }
+  .hand-underline {
+    view-timeline: --underline;
+  }
+  .hand-underline path {
+    animation: draw linear both;
+    animation-timeline: --underline;
+    animation-range: entry 0% cover 50%;
+  }
+}
+
+/* Small screens scroll freely, so each section rises and fades in as it enters the view. */
+@supports (animation-timeline: view()) {
+  @media (max-width: 767px), (max-height: 639px) {
+    .page-section {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    translate: 0 40px;
+  }
+}
+
+/* Trading building at night: windows stay warm, the sky gets a moon and twinkling stars. */
+.twinkle {
+  animation: pulse 2.6s ease-in-out infinite;
+}
+.stars {
+  filter: drop-shadow(0 0 3px #ffd27a);
+}
+.moon-float {
+  animation: moon-float 9s ease-in-out infinite;
+}
+@keyframes moon-float {
+  50% {
+    translate: -6px -5px;
+  }
+}
+.moon-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: moon-glow 4s ease-in-out infinite;
+}
+@keyframes moon-glow {
+  50% {
+    opacity: 0.45;
+    scale: 1.15;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
     transition: none !important;
   }
-  .packet {
+  .packet,
+  .scroll-progress {
     display: none;
   }
 }
