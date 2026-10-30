@@ -32,12 +32,12 @@ test("a card opens its project in the large box and the cross brings the cards b
   expect(screen.getByText(t.items.site.title)).toBeTruthy();
 });
 
-test("Price Estimate opens with its diagrams and links to its repository", () => {
+test("Price Estimate opens with its diagrams and links to its repository", async () => {
   renderProjects();
 
   fireEvent.click(screen.getByText(t.items.price.title));
 
-  expect(screen.getByRole("img", { name: t.items.price.d.flow })).toBeTruthy();
+  expect(await screen.findByRole("img", { name: t.items.price.d.flow })).toBeTruthy();
   expect(
     screen.getByRole("img", { name: t.items.price.d.ladder }),
   ).toBeTruthy();

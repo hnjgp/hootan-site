@@ -197,7 +197,7 @@ function Team({ d, agents }: P) {
       {ORDER.map((i, k) => (
         <g key={i} transform={`translate(${ax(k)} 50)`}>
           <image
-            href={`/assets/av_${FILES[i]}.jpg`}
+            href={`/assets/av_${FILES[i]}.webp`}
             x={-27}
             y={-27}
             width={54}

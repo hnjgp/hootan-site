@@ -148,14 +148,14 @@ export function Trading({
             <div className="absolute inset-0 snap:inset-auto snap:top-1/2 snap:left-1/2 snap:aspect-[1672/941] snap:w-[min(max(100cqw,100cqh*1.7768),100cqw/0.62)] snap:-translate-x-1/2 snap:-translate-y-1/2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/assets/office_idle.jpg"
+                src="/assets/office_idle.webp"
                 alt={t.alt}
                 className="absolute inset-0 h-full w-full"
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 key={`${name}-${events.length}`}
-                src={`/assets/talk_${name}.jpg`}
+                src={`/assets/talk_${name}.webp`}
                 alt=""
                 className="pop absolute rounded-[3px] outline-[3px] outline-orange"
                 style={{
@@ -225,7 +225,7 @@ export function Trading({
               <div key={e.seq} className="pop flex items-start gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`/assets/av_${e.agent}.jpg`}
+                  src={`/assets/av_${e.agent}.webp`}
                   alt=""
                   className="h-7 w-7 shrink-0 rounded-full border-[1.5px] border-line"
                 />

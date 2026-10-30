@@ -17,7 +17,7 @@ export function Portrait({ t, phase, word, file }: { t: Dictionary["twin"]; phas
         {IMAGES.map((name, k) => (
           <div key={name} className="absolute inset-0 transition-opacity duration-500" style={{ opacity: k === shown ? 1 : 0 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/assets/${name}.jpg`} alt={k === shown ? t.alt[k] : ""} aria-hidden={k !== shown} className="absolute inset-0 h-full w-full object-cover" />
+            <img src={`/assets/${name}.webp`} alt={k === shown ? t.alt[k] : ""} aria-hidden={k !== shown} className="absolute inset-0 h-full w-full object-cover" />
             <WindowView id={name} panes={PANES[name]} />
           </div>
         ))}

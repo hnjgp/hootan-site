@@ -41,7 +41,7 @@ export function Leaderboard({
         <span className="w-7 font-mono text-[13px] text-muted">{r.rank}</span>
         {r.is_ai && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src="/assets/av_pm.jpg" alt="" className="h-6 w-6 rounded-full border-[1.5px] border-line" />
+          <img src="/assets/av_pm.webp" alt="" className="h-6 w-6 rounded-full border-[1.5px] border-line" />
         )}
         <span dir="auto" className="min-w-0 flex-1 truncate font-semibold">
           {r.is_ai ? t.ai : r.nickname}

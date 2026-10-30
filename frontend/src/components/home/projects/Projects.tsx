@@ -4,16 +4,16 @@ import { Underlined } from "@/components/HandUnderline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dictionary, Locale } from "@/i18n";
 import { glide } from "@/lib/motion";
-import { ASTRA } from "./diagrams/Astra";
-import { BEHENGAM } from "./diagrams/Behengam";
-import { NOTES } from "./diagrams/Notes";
-import { PRICE } from "./diagrams/Price";
-import { SITE } from "./diagrams/Site";
+import dynamic from "next/dynamic";
+import type { ProjectId } from "./Diagram";
 
-const IDS = ["astra", "notes", "price", "behengam", "site"] as const;
+/** Diagram code loads only when a project panel opens, so it stays out of the first page load. */
+const Diagram = dynamic(() => import("./Diagram").then((m) => m.Diagram), { ssr: false });
+
+const IDS: ProjectId[] = ["astra", "notes", "price", "behengam", "site"];
 /** Each card floats on its own clock. */
 const FLOATS = ["float-a", "float-b", "float-c"];
-type Id = (typeof IDS)[number];
+type Id = ProjectId;
 type T = Dictionary["projects"];
 
 const PROFILE = "https://github.com/hnjgp";
@@ -50,38 +50,6 @@ function Icon({ id }: { id: Id }) {
       </svg>
     </span>
   );
-}
-
-/** The diagram `name` of project `id`. */
-function Diagram({
-  id,
-  name,
-  t,
-  agents,
-}: {
-  id: Id;
-  name: string;
-  t: T;
-  agents: string[];
-}) {
-  if (id === "astra") {
-    const C = ASTRA[name as keyof typeof ASTRA];
-    return <C d={t.items.astra.d} />;
-  }
-  if (id === "notes") {
-    const C = NOTES[name as keyof typeof NOTES];
-    return <C d={t.items.notes.d} />;
-  }
-  if (id === "price") {
-    const C = PRICE[name as keyof typeof PRICE];
-    return <C d={t.items.price.d} />;
-  }
-  if (id === "behengam") {
-    const C = BEHENGAM[name as keyof typeof BEHENGAM];
-    return <C d={t.items.behengam.d} />;
-  }
-  const C = SITE[name as keyof typeof SITE];
-  return <C d={t.items.site.d} agents={agents} />;
 }
 
 /** The open project: a large scrollable box with the full story, diagrams and the GitHub link. */
