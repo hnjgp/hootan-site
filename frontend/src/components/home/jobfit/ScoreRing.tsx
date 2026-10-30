@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import type { Locale } from "@/i18n";
+import { still } from "@/lib/motion";
 
 const R = 50;
 const LENGTH = 2 * Math.PI * R;
 const COUNT_MS = 1200;
 
-/** Score ring that counts up from 0 to the score; shows a dash when there is no score yet. */
+/** Score ring that counts up from 0 to the score (at once with reduced motion); shows a dash when there is no score yet. */
 export function ScoreRing({ score, of, lang }: { score: number | null; of: string; lang: Locale }) {
   const [shown, setShown] = useState(0);
 
@@ -22,7 +23,7 @@ export function ScoreRing({ score, of, lang }: { score: number | null; of: strin
     return () => cancelAnimationFrame(frame);
   }, [score]);
 
-  const value = score === null ? 0 : shown;
+  const value = score === null ? 0 : still() ? score : shown;
 
   return (
     <div className="relative h-[120px] w-[120px] shrink-0">

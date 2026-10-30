@@ -51,7 +51,7 @@ export function Order({
 
   return (
     <form
-      className={`flex min-h-0 flex-col gap-1.5 ${me ? "" : "opacity-60"}`}
+      className="flex min-h-0 flex-col gap-1.5"
       onSubmit={(e) => {
         e.preventDefault();
         guard(async () => {

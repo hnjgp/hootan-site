@@ -4,7 +4,7 @@ import { TelegramIcon, WhatsAppIcon } from "../icons";
 
 /** "Contact me" button that opens a small card with email, phone, WhatsApp and Telegram (no JavaScript). */
 export function Contact({ t }: { t: Dictionary["header"] }) {
-  const row = "flex items-center gap-2 rounded-lg px-2 py-2 text-ink no-underline hover:bg-soft";
+  const row = "flex min-h-11 items-center gap-2 rounded-lg px-2 py-2 text-ink no-underline hover:bg-soft";
   const app = "btn flex flex-1 items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-line py-2 text-[14px] text-ink no-underline";
   return (
     <details className="relative">

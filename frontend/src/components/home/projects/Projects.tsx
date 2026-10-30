@@ -3,6 +3,7 @@
 import { Underlined } from "@/components/HandUnderline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dictionary, Locale } from "@/i18n";
+import { glide } from "@/lib/motion";
 import { ASTRA } from "./diagrams/Astra";
 import { BEHENGAM } from "./diagrams/Behengam";
 import { NOTES } from "./diagrams/Notes";
@@ -234,7 +235,7 @@ export function Projects({
 
   const show = useCallback((id: Id) => {
     setOpen(id);
-    document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById("projects")?.scrollIntoView({ behavior: glide() });
   }, []);
 
   const close = useCallback(() => {

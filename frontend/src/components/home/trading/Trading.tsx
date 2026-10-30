@@ -4,6 +4,7 @@ import { Underlined } from "@/components/HandUnderline";
 import { useEffect, useRef } from "react";
 import type { Dictionary, Locale } from "@/i18n";
 import { latinDigits } from "@/lib/digits";
+import { glide } from "@/lib/motion";
 import { NightSky } from "./NightSky";
 import { useMeeting } from "./useMeeting";
 
@@ -59,7 +60,7 @@ export function Trading({
   useEffect(() => {
     dialog.current?.scrollTo({
       top: dialog.current.scrollHeight,
-      behavior: "smooth",
+      behavior: glide(),
     });
   }, [events.length, done]);
 

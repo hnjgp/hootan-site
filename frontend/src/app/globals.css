@@ -119,8 +119,21 @@ html {
     height: calc(100dvh - var(--head-h));
   }
 }
-a {
-  color: var(--accent);
+/* Touch screens get 44px tap targets (CLAUDE.md 15.8); unlayered on purpose so it beats the smaller min-h utilities. */
+@media (pointer: coarse) {
+  button,
+  a.btn,
+  input,
+  select {
+    min-height: 44px;
+  }
+}
+
+/* In the base layer, so a link's own colour class wins over this default. */
+@layer base {
+  a {
+    color: var(--accent);
+  }
 }
 :focus-visible {
   outline: 2.5px solid var(--orange);
@@ -526,5 +539,8 @@ a {
   .packet,
   .scroll-progress {
     display: none;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }
