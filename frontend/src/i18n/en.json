@@ -880,11 +880,11 @@
         "kind": "hootanseifi.com",
         "status": "You are here",
         "short": "A digital twin, a job fit checker and a team of seven AI trading agents, with budget caps, tests and evaluations, for about $2 to $3 a month.",
-        "key": "187 tests",
+        "key": "217 tests",
         "lead": "This site is a real AI engineering project and a live portfolio. It is bilingual (Persian and English) with light and dark themes. Behind it: a digital twin that answers from my own documents, a job fit checker that scores a job ad honestly, and a team of seven AI agents that trade Bitcoin at real prices with virtual money while visitors try to beat them.",
         "stats": [
           [
-            "187",
+            "217",
             "backend tests"
           ],
           [
@@ -941,7 +941,7 @@
           },
           {
             "h": "Quality",
-            "p": "187 backend tests run against a real PostgreSQL database with a fake model client. Evaluations with real models check the digital twin (68 of 68 questions, including refusals and prompt injections), the job fit checker (9 of 9 ads) and the trading team (20 of 20 meetings with no broken risk rule)."
+            "p": "217 backend tests run against a real PostgreSQL database with a fake model client. Evaluations with real models check the digital twin (72 of 72 questions, including refusals and prompt injections), the job fit checker (9 of 9 ads) and the trading team (20 of 20 meetings with no broken risk rule)."
           }
         ],
         "d": {
