@@ -85,3 +85,44 @@ test("signing up with an email that has an account names the email", async () =>
 
   expect((await screen.findByRole("alert")).textContent).toBe(t.errEmailTaken);
 });
+
+test("a remembered account is filled in and one click logs back in without the password", async () => {
+  const fetch = backend({
+    "/api/game/remembered": [200, { nickname: "satoshi" }],
+    "/api/game/login/remembered": [200, { nickname: "satoshi" }],
+  });
+  const done = vi.fn();
+  render(
+    <AuthProvider>
+      <AuthForm t={t} onDone={done} />
+    </AuthProvider>,
+  );
+
+  await vi.waitFor(() => expect((screen.getByPlaceholderText(t.nickname) as HTMLInputElement).value).toBe("satoshi"));
+  expect((screen.getByPlaceholderText(t.password) as HTMLInputElement).value).not.toBe("");
+  expect((screen.getByLabelText(t.remember) as HTMLInputElement).checked).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: t.login }));
+
+  await vi.waitFor(() => expect(done).toHaveBeenCalled());
+  expect(fetch.mock.calls.some(([u]) => u === "/api/game/login/remembered")).toBe(true);
+  expect(fetch.mock.calls.some(([u]) => u === "/api/game/login")).toBe(false);
+});
+
+test("typing another password logs in the normal way", async () => {
+  const fetch = backend({
+    "/api/game/remembered": [200, { nickname: "satoshi" }],
+    "/api/game/login": [200, { nickname: "satoshi" }],
+  });
+  render(
+    <AuthProvider>
+      <AuthForm t={t} />
+    </AuthProvider>,
+  );
+
+  await vi.waitFor(() => expect((screen.getByPlaceholderText(t.nickname) as HTMLInputElement).value).toBe("satoshi"));
+  type(t.password, "pw");
+  fireEvent.click(screen.getByRole("button", { name: t.login }));
+
+  await vi.waitFor(() => expect(fetch.mock.calls.some(([u]) => u === "/api/game/login")).toBe(true));
+  expect(sent(fetch, "/api/game/login")).toMatchObject({ nickname: "satoshi", password: "pw", remember: true });
+});

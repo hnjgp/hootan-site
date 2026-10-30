@@ -48,6 +48,12 @@ async def join(api, nickname: str = "satoshi", **extra) -> dict:
     return response.json()
 
 
+def player_cookie(response) -> str:
+    """The Set-Cookie header of the log-in cookie, lowercased."""
+    headers = response.headers.get_list("set-cookie")
+    return next(h for h in headers if h.startswith("player=")).lower()
+
+
 async def test_signing_up_stores_the_account_and_logs_in(api, session):
     body = await join(api, email="a@b.com", phone="+98 912 000 0000")
 
@@ -145,8 +151,8 @@ async def test_login_is_remembered_for_a_year_only_when_asked(api):
     body = {"nickname": "satoshi", "password": "pw"}
     short = await api.post("/api/game/login", json=body)
     long = await api.post("/api/game/login", json=body | {"remember": True})
-    assert "max-age" not in short.headers["set-cookie"].lower()
-    assert "max-age=31536000" in long.headers["set-cookie"].lower()
+    assert "max-age" not in player_cookie(short)
+    assert "max-age=31536000" in player_cookie(long)
 
 
 async def test_me_compares_the_account_with_holding_and_the_ai_team(api):
@@ -229,3 +235,50 @@ async def test_admin_list_needs_the_admin_token(api, monkeypatch):
     assert [(r["nickname"], r["password"], r["email"]) for r in rows] == [
         ("satoshi", "pw", "a@b.com")
     ]
+
+
+async def test_a_remembered_account_logs_back_in_after_logout_without_a_password(api):
+    await join(api)
+    body = {"nickname": "satoshi", "password": "pw", "remember": True}
+    await api.post("/api/game/login", json=body)
+    await api.post("/api/game/logout")
+    assert (await api.get("/api/game/me")).status_code == 401
+
+    offered = await api.get("/api/game/remembered")
+    back = await api.post("/api/game/login/remembered")
+
+    assert offered.json() == {"nickname": "satoshi"}
+    assert back.status_code == 200
+    assert (await api.get("/api/game/me")).json()["nickname"] == "satoshi"
+
+
+async def test_logging_in_without_remember_forgets_the_account(api):
+    await join(api)
+    body = {"nickname": "satoshi", "password": "pw"}
+    await api.post("/api/game/login", json=body | {"remember": True})
+    await api.post("/api/game/login", json=body)
+    await api.post("/api/game/logout")
+
+    assert (await api.get("/api/game/remembered")).status_code == 404
+    assert (await api.post("/api/game/login/remembered")).status_code == 404
+
+
+async def test_forgetting_stops_the_offer(api):
+    await join(api)
+    await api.post(
+        "/api/game/login",
+        json={"nickname": "satoshi", "password": "pw", "remember": True},
+    )
+    await api.post("/api/game/logout")
+
+    assert (await api.delete("/api/game/remembered")).status_code == 204
+    assert (await api.get("/api/game/remembered")).status_code == 404
+
+
+async def test_a_forged_remember_cookie_is_ignored(api, session):
+    await join(api)
+    player = await session.scalar(select(Player))
+    api.cookies.clear()
+    api.cookies.set("remembered", f"{player.id}.forged")
+
+    assert (await api.post("/api/game/login/remembered")).status_code == 404

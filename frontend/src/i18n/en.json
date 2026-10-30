@@ -1093,6 +1093,7 @@
     "reset": "Set password and log in",
     "errCode": "The code is wrong or expired.",
     "errEmailTaken": "This email already has an account.",
-    "back": "Back to log in"
+    "back": "Back to log in",
+    "otherAccount": "Use another account"
   }
 }

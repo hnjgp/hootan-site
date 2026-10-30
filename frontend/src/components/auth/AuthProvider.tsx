@@ -55,6 +55,11 @@ type Auth = {
   /** Ask for a reset code by email; the answer is the same for unknown emails. */
   forgot: (email: string) => Promise<Failure>;
   reset: (body: Reset) => Promise<Failure>;
+  /** The nickname this browser remembers after a log-out with "remember me", or null. */
+  remembered: () => Promise<string | null>;
+  /** Log the remembered account back in, no password needed. */
+  logInRemembered: () => Promise<Failure>;
+  forget: () => Promise<void>;
   setPhoto: (file: File) => Promise<boolean>;
 };
 
@@ -77,6 +82,12 @@ async function account(url: string, body: object): Promise<Me | Exclude<Failure,
     return 0;
   }
 }
+
+/** The remembered nickname; outside the component so effects can depend on it. */
+const remembered = (): Promise<string | null> =>
+  fetch("/api/game/remembered")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((body) => body?.nickname ?? null, () => null);
 
 /** Square-crop and shrink a photo to a small JPEG in the browser, so the server stores a few KB. */
 async function shrink(file: File): Promise<Blob> {
@@ -131,6 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     reset: (body) => enter("/api/game/password/reset", body),
+    remembered,
+    logInRemembered: () => enter("/api/game/login/remembered", {}),
+    forget: async () => {
+      await fetch("/api/game/remembered", { method: "DELETE" });
+    },
     setPhoto: async (file) => {
       try {
         const body = await shrink(file);

@@ -18,7 +18,13 @@ from app.db.models import Player
 from app.db.session import get_session
 from app.game.api import check_limit, me_out, shown_price
 from app.game.players import require_player
-from app.security.cookie import COOKIE_NAME, set_player_cookie
+from app.security.cookie import (
+    COOKIE_NAME,
+    FLAGS,
+    REMEMBER_NAME,
+    set_player_cookie,
+    unsign,
+)
 from app.security.rate_limit import RateLimiter
 from app.security.visitor import visitor_id
 
@@ -109,8 +115,48 @@ async def log_in(
 
 @router.post("/logout", status_code=204)
 async def log_out(response: Response) -> None:
-    """Forget who is logged in on this browser."""
-    response.delete_cookie(COOKIE_NAME, httponly=True, secure=True, samesite="lax")
+    """Forget who is logged in on this browser; a remembered account stays offered."""
+    response.delete_cookie(COOKIE_NAME, **FLAGS)
+
+
+async def remembered_player(
+    request: Request, session: Annotated[AsyncSession, Depends(get_session)]
+) -> Player:
+    """The player this browser remembers, or 404."""
+    value = request.cookies.get(REMEMBER_NAME)
+    player_id = unsign(value, get_settings()) if value else None
+    player = await session.get(Player, player_id) if player_id else None
+    if player is None:
+        raise HTTPException(status_code=404, detail="Nothing remembered")
+    return player
+
+
+@router.get("/remembered")
+async def remembered(
+    player: Annotated[Player, Depends(remembered_player)],
+) -> dict:
+    """The remembered nickname, for the log-in form to fill in."""
+    return {"nickname": player.nickname}
+
+
+@router.post("/login/remembered")
+async def log_in_remembered(
+    request: Request,
+    response: Response,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    player: Annotated[Player, Depends(remembered_player)],
+    price: Annotated[Decimal, Depends(shown_price)],
+) -> dict:
+    """Log the remembered player back in without a password, remembered again."""
+    check_limit(LOGIN_LIMITER, request)
+    set_player_cookie(response, player.id, get_settings(), remember=True)
+    return await me_out(session, player, price)
+
+
+@router.delete("/remembered", status_code=204)
+async def forget(response: Response) -> None:
+    """Stop offering the remembered account on this browser."""
+    response.delete_cookie(REMEMBER_NAME, **FLAGS)
 
 
 @router.put("/me/avatar", status_code=204)
