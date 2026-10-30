@@ -91,7 +91,7 @@ async def test_bad_email_phone_password_or_nickname_length_is_rejected(api, extr
 async def test_log_out_then_log_in_with_the_password(api):
     await join(api)
     assert (await api.post("/api/game/logout")).status_code == 204
-    assert (await api.get("/api/game/me")).status_code == 401
+    assert (await api.get("/api/game/me")).json() is None
 
     wrong = await api.post(
         "/api/game/login", json={"nickname": "satoshi", "password": "nope"}
@@ -198,7 +198,7 @@ async def test_forged_cookie_is_not_a_player(api, session):
     player = await session.scalar(select(Player))
     api.cookies.clear()
     api.cookies.set("player", f"{player.id}.forged")
-    assert (await api.get("/api/game/me")).status_code == 401
+    assert (await api.get("/api/game/me")).json() is None
     api.cookies.set("player", sign(player.id, get_settings()))
     assert (await api.get("/api/game/me")).status_code == 200
 
@@ -242,7 +242,7 @@ async def test_a_remembered_account_logs_back_in_after_logout_without_a_password
     body = {"nickname": "satoshi", "password": "pw", "remember": True}
     await api.post("/api/game/login", json=body)
     await api.post("/api/game/logout")
-    assert (await api.get("/api/game/me")).status_code == 401
+    assert (await api.get("/api/game/me")).json() is None
 
     offered = await api.get("/api/game/remembered")
     back = await api.post("/api/game/login/remembered")

@@ -150,7 +150,7 @@ function Detail({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-7">
-        <p className="mt-0 mb-5 max-w-[860px] text-[16px] leading-[1.8]">
+        <p className="mt-0 mb-5 text-justify text-[16px] leading-[1.8]">
           {p.lead}
         </p>
 
@@ -171,7 +171,7 @@ function Detail({
         {p.sections.map((s) => (
           <section key={s.h} className="mb-7">
             <h4 className="mt-0 mb-2 text-[18px] font-bold">{s.h}</h4>
-            <p className="mt-0 mb-3 max-w-[860px] text-[15px] leading-[1.8] text-muted">
+            <p className="mt-0 mb-3 text-justify text-[15px] leading-[1.8] text-muted">
               {s.p}
             </p>
             {"dia" in s && s.dia && (
@@ -233,14 +233,23 @@ export function Projects({
   const [open, setOpen] = useState<Id | null>(null);
   const opener = useRef<HTMLElement | null>(null);
 
+  const shown = useRef<Id | null>(null);
+
   const show = useCallback((id: Id) => {
+    shown.current = id;
     setOpen(id);
     document.getElementById("projects")?.scrollIntoView({ behavior: glide() });
   }, []);
 
   const close = useCallback(() => {
     setOpen(null);
-    requestAnimationFrame(() => opener.current?.focus());
+    // A card is unmounted while its panel is open, so focus goes to the newly rendered card of the same project.
+    requestAnimationFrame(() =>
+      (opener.current?.isConnected
+        ? opener.current
+        : document.querySelector<HTMLElement>(`[data-project="${shown.current}"]`)
+      )?.focus(),
+    );
   }, []);
 
   useEffect(() => {
@@ -290,6 +299,7 @@ export function Projects({
               <button
                 key={id}
                 type="button"
+                data-project={id}
                 onClick={(e) => {
                   opener.current = e.currentTarget;
                   show(id);

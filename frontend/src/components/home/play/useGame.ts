@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth, type Me } from "../../auth/AuthProvider";
 
 export type Row = { rank: number; nickname: string; return_pct: number; is_ai: boolean };
@@ -43,21 +43,27 @@ export function useGame() {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<OrderFailure>(null);
   const loggedIn = !!me;
+  /** Count of orders and closes sent; a poll that overlaps one is stale and dropped. */
+  const sends = useRef({ started: 0, running: 0 });
 
   useEffect(() => {
     json<Trade[]>("/api/trading/trades").then(([, body]) => setTrades(body ?? []));
   }, []);
 
   useEffect(() => {
-    const tick = () =>
-      loggedIn
+    const tick = () => {
+      const at = sends.current.started;
+      const idle = !sends.current.running;
+      const fresh = () => idle && !sends.current.running && sends.current.started === at;
+      return loggedIn
         ? json<Me>("/api/game/me").then(([status, body]) => {
-            if (status === 200) {
+            if (status === 200 && body && fresh()) {
               setMe(() => body);
               setLive({ price: body.price, at: Date.now() });
             }
           })
         : json<{ price: string }>("/api/game/price").then(([, body]) => body && setLive({ price: body.price, at: Date.now() }));
+    };
     tick();
     const id = setInterval(tick, LIVE_MS);
     return () => clearInterval(id);
@@ -71,6 +77,8 @@ export function useGame() {
   const send = async (url: string, body?: object): Promise<boolean> => {
     setBusy(true);
     setFailure(null);
+    sends.current.started++;
+    sends.current.running++;
     try {
       const [status, out] = await post(url, body);
       if (status === 200 || status === 201) {
@@ -82,6 +90,7 @@ export function useGame() {
     } catch {
       setFailure(0);
     } finally {
+      sends.current.running--;
       setBusy(false);
     }
     return false;

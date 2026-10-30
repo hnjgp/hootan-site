@@ -15,7 +15,7 @@ from app.db.models import MarketPrice, Player, Position
 from app.db.session import get_session
 from app.exchange import book, calc
 from app.game.leaderboard import Period, leaderboard, pct
-from app.game.players import require_player
+from app.game.players import current_player, require_player
 from app.market.prices import PriceUnavailable, fetch_btc_price, make_client
 from app.security.rate_limit import RateLimiter
 
@@ -111,11 +111,12 @@ async def me_out(session: AsyncSession, player: Player, price: Decimal) -> dict:
 @router.get("/me")
 async def me(
     session: Annotated[AsyncSession, Depends(get_session)],
-    player: Annotated[Player, Depends(require_player)],
+    player: Annotated[Player | None, Depends(current_player)],
     price: Annotated[Decimal, Depends(shown_price)],
-) -> dict:
-    """The current player's account at the current price."""
-    return await me_out(session, player, price)
+) -> dict | None:
+    """The current player's account at the current price, or null for a visitor who
+    is not logged in (a normal state, so not an error the browser would log)."""
+    return await me_out(session, player, price) if player else None
 
 
 @router.post("/positions", status_code=201)
