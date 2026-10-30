@@ -81,3 +81,9 @@ for (const [name, viewport] of [
     await page.screenshot({ path: info.outputPath(`${name}.png`), fullPage: true });
   });
 }
+
+test("a project deep link opens its panel and scrolls to the projects", async ({ page }) => {
+  await page.goto("/en#project-price");
+
+  await expect(page.getByText(en.projects.items.price.lead)).toBeInViewport();
+});
