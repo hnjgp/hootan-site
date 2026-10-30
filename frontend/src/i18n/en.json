@@ -231,7 +231,7 @@
     "rules": [
       "Sign up and get 10,000 virtual dollars. The AI team starts with the same.",
       "Open a long (you profit if Bitcoin rises) or a short (you profit if it falls), with 1x to 100x leverage.",
-      "Add a take profit and a stop loss if you like. If the loss eats the whole margin, the position is liquidated.",
+      "Add a take profit and a stop loss if you like. If the loss reaches the whole amount invested, the position is liquidated.",
       "Opening and closing each cost 0.05% of the position size. The team uses at most 5x."
     ],
     "yourMove": "Your move",
@@ -240,8 +240,7 @@
     "short": "Short",
     "longHint": "profit if it rises",
     "shortHint": "profit if it falls",
-    "amount": "Margin",
-    "ofCash": "of free cash",
+    "amount": "Amount invested (USD)",
     "leverage": "Leverage",
     "tp": "Take profit (optional)",
     "sl": "Stop loss (optional)",
@@ -251,15 +250,15 @@
     "open": "Open {side}",
     "errors": {
       "429": "Too many orders from this network today.",
-      "cash": "Not enough free cash for this margin and its fee.",
-      "margin": "The margin must be at least $1.",
+      "cash": "Not enough capital outside your positions for this amount and its fee.",
+      "margin": "The amount invested must be at least $1.",
       "tp": "Take profit must be above the price for a long and below it for a short.",
       "sl": "Stop loss must sit between the price and the liquidation price.",
       "open": "You can have at most 20 open positions."
     },
     "equity": "Equity",
     "pnl": "Total P&L",
-    "cash": "Free cash",
+    "cash": "Capital not in positions",
     "positions": "Open positions",
     "history": "Closed",
     "noPositions": "No open positions yet.",

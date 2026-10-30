@@ -62,7 +62,7 @@ export function Play({ t, auth, lang }: { t: Dictionary["play"]; auth: Dictionar
           <div className="grid grid-cols-3 gap-2">
             {strip.map(([label, value, color]) => (
               <div key={label} className="min-w-0 rounded-[14px] border-[1.5px] border-line bg-card px-3 py-1">
-                <div className="truncate text-[12px] text-muted">{label}</div>
+                <div className="text-[12px] leading-tight text-muted">{label}</div>
                 <div dir="ltr" className={`truncate font-mono text-[16px] font-bold rtl:text-right ${value ? color : "text-muted"}`}>
                   {value ?? "—"}
                 </div>

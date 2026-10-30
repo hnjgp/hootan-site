@@ -3,7 +3,6 @@ import { afterEach, expect, test, vi } from "vitest";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Account } from "@/components/header/Account";
 import { summary } from "@/components/home/play/Leaderboard";
-import { maxMargin } from "@/components/home/play/Order";
 import { Play } from "@/components/home/play/Play";
 import { getDictionary } from "@/i18n";
 
@@ -113,11 +112,12 @@ test("logged in, the strip and the open positions show live numbers, and close s
   expect(fetch.mock.calls.some(([url]) => url === "/api/game/positions/7/close")).toBe(true);
 });
 
-test("an order sends side, margin from the percent of cash, leverage and levels", async () => {
+test("an order sends side, the dollar amount, leverage and levels", async () => {
   const fetch = backend({ "/api/game/me": [200, { ...ME, open: [] }], "/api/game/positions": [201, ME] });
   renderPlay();
 
   fireEvent.click(await screen.findByRole("button", { name: new RegExp(`^▼ ${t.short}`) }));
+  fireEvent.change(screen.getByLabelText(t.amount), { target: { value: "750" } });
   fireEvent.change(screen.getByRole("slider"), { target: { value: "20" } });
   fireEvent.change(screen.getByLabelText(t.sl), { target: { value: "84000" } });
   fireEvent.click(screen.getByRole("button", { name: t.open.replace("{side}", t.short) }));
@@ -126,7 +126,7 @@ test("an order sends side, margin from the percent of cash, leverage and levels"
   const sent = fetch.mock.calls.find(([url]) => url === "/api/game/positions")!;
   expect(JSON.parse(sent[1]!.body as string)).toEqual({
     side: "short",
-    margin_usd: maxMargin(899.5, 20).toFixed(2),
+    margin_usd: "750.00",
     leverage: 20,
     tp_price: null,
     sl_price: "84000",
@@ -140,11 +140,6 @@ test("a refused order explains why", async () => {
   fireEvent.click(await screen.findByRole("button", { name: t.open.replace("{side}", t.long) }));
 
   expect((await screen.findByRole("alert")).textContent).toBe(t.errors.tp);
-});
-
-test("the margin for a share of cash leaves room for the fee", () => {
-  expect(maxMargin(10_000, 10)).toBe(9950.24);
-  expect(maxMargin(1_000, 1)).toBe(999.5);
 });
 
 test("the summary shows the top five, the AI team and the player, with gaps", () => {

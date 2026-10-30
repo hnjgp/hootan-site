@@ -7,12 +7,8 @@ import type { Me } from "../../auth/AuthProvider";
 import type { Order as OrderBody, OrderFailure } from "./useGame";
 
 const FEE_RATE = 0.0005;
-const START_USD = 10_000;
 
-/** The largest margin `cash` pays for with its opening fee, to the cent below (as the server does). */
-export const maxMargin = (cash: number, leverage: number) => Math.floor((cash / (1 + leverage * FEE_RATE)) * 100) / 100;
-
-/** The order form: long or short, margin in dollars or percent of free cash, leverage,
+/** The order form: long or short, the amount invested in dollars, leverage,
  * optional take profit and stop loss, and what the order will cost. Logged-out visitors
  * see it dimmed; using it asks them to log in (or sign up). */
 export function Order({
@@ -35,8 +31,7 @@ export function Order({
   open: (order: OrderBody) => Promise<boolean>;
 }) {
   const [side, setSide] = useState<"long" | "short">("long");
-  const [unit, setUnit] = useState<"usd" | "pct">("pct");
-  const [amount, setAmount] = useState("10");
+  const [amount, setAmount] = useState("1000");
   const [leverage, setLeverage] = useState(5);
   const [tp, setTp] = useState("");
   const [sl, setSl] = useState("");
@@ -47,9 +42,7 @@ export function Order({
 
   /** Logged out, every control just asks to log in. */
   const guard = (act: () => void) => () => (me ? act() : setNeedLogin(true));
-  const cash = me ? Number(me.cash_usd) : START_USD;
-  const value = Number(amount) || 0;
-  const margin = unit === "usd" ? value : maxMargin((cash * Math.min(value, 100)) / 100, leverage);
+  const margin = Number(amount) || 0;
   const now = Number(price) || 0;
   const liq = now && (side === "long" ? now * (1 - 1 / leverage) : now * (1 + 1 / leverage));
   const usd = (v: number) => "$" + v.toLocaleString(loc, { maximumFractionDigits: 2 });
@@ -94,38 +87,18 @@ export function Order({
       </div>
 
       <label className="flex flex-col gap-1 text-[13px]">
-        <span className="flex justify-between">
-          <span className="text-muted">{t.amount}</span>
-          {unit === "pct" && (
-            <span className="text-[12px] text-muted">
-              = <bdi className="font-mono">{usd(margin)}</bdi> {t.ofCash}
-            </span>
-          )}
-        </span>
-        <span className="flex gap-1.5">
-          <input
-            name="amount"
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="any"
-            dir="ltr"
-            value={amount}
-            onChange={(e) => guard(() => setAmount(e.target.value))()}
-            className={field}
-          />
-          {(["pct", "usd"] as const).map((u) => (
-            <button
-              key={u}
-              type="button"
-              aria-pressed={unit === u}
-              onClick={guard(() => setUnit(u))}
-              className="btn chip min-h-9 min-w-10 rounded-xl border border-line px-2 font-mono text-[13px] aria-pressed:bg-inv aria-pressed:text-inv-ink"
-            >
-              {u === "pct" ? "%" : "$"}
-            </button>
-          ))}
-        </span>
+        <span className="text-muted">{t.amount}</span>
+        <input
+          name="amount"
+          type="number"
+          inputMode="decimal"
+          min="0"
+          step="any"
+          dir="ltr"
+          value={amount}
+          onChange={(e) => guard(() => setAmount(e.target.value))()}
+          className={field}
+        />
       </label>
 
       <label className="flex flex-col text-[13px]">
