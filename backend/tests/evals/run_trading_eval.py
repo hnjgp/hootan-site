@@ -12,11 +12,11 @@ from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.db.models import LLMUsage, SessionEvent, TradingSession
+from app.db.models import LLMUsage, Position, SessionEvent, TradingSession
 from app.db.session import engine
 from app.exchange import calc
 from app.exchange.book import Book, load_book, open_position
@@ -87,6 +87,8 @@ async def one_meeting(llm: LLMClient, n: int, market: dict, account: list) -> di
         async with AsyncSession(
             bind=conn, join_transaction_mode="create_savepoint", expire_on_commit=False
         ) as db:
+            # Start from the scenario alone, not the team's real open positions.
+            await db.execute(delete(Position).where(Position.player_id.is_(None)))
             for side, margin, leverage in account:
                 await open_position(db, None, side, Decimal(margin), leverage, ENTRY)
             before = await load_book(db, None)

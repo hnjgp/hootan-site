@@ -22,12 +22,16 @@ ROLES = {
     "bear": "You are the bear. Make the strongest honest case that BTC will fall: "
     "for a short position, or for closing long positions.",
     # In the first eval (2026-10-27) the trader chose BUY 20 times out of 20, even
-    # with RSI 76, so every choice is described here.
+    # with RSI 76, so every choice is described here. On the exchange (2026-10-30) it
+    # still opened 10 longs and 1 short, so long and short get mirror-image rules.
     "trader": "You are the trader. Weigh the bull and the bear fairly. For every "
     "open position choose hold or close: close when the case has turned against it. "
-    "Then open at most one new position, only when one side is clearly stronger: "
-    "long when a rise is clearly more likely, short when a fall is, for example "
-    "after a strong rally with RSI above 70. Otherwise set new_position to null; "
+    "Then open at most one new position, only when one side is clearly stronger. "
+    "Long and short are equally normal trades; do not prefer long. Go short when "
+    "BTC is overbought (RSI above 70) after a rally, or when it trades below both "
+    "averages and is not oversold (RSI above 30). Go long when BTC is oversold (RSI "
+    "below 30) after a fall, or when it trades above both averages and is not "
+    "overbought (RSI below 70). Otherwise set new_position to null; "
     "doing nothing is a normal and often correct choice. margin_pct is the percent "
     "of equity put up as margin (the limit is 20); leverage 1 to 5, lower when "
     "unsure; stop_loss_pct 1 to 5; take_profit_pct is the price move at which to "
