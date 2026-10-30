@@ -38,7 +38,15 @@ export function Order({
   const [needLogin, setNeedLogin] = useState(false);
 
   if (me === undefined) return <div className="flex-1" />;
-  if (me === null && needLogin) return <AuthForm t={auth} title={t.needLogin} />;
+  if (me === null && needLogin)
+    return (
+      <div className="flex min-h-0 flex-col gap-2">
+        <p role="alert" className="m-0 rounded-[12px] border-2 border-orange bg-orange/15 px-3 py-2 text-[15px] font-bold">
+          {t.needLogin}
+        </p>
+        <AuthForm t={auth} />
+      </div>
+    );
 
   /** Logged out, every control just asks to log in. */
   const guard = (act: () => void) => () => (me ? act() : setNeedLogin(true));

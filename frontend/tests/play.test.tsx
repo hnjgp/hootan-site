@@ -92,7 +92,7 @@ test("logged out, the form shows but using it asks to log in", async () => {
 
   fireEvent.click(await longButton());
 
-  expect(await screen.findByText(t.needLogin)).toBeTruthy();
+  expect((await screen.findByRole("alert")).textContent).toBe(t.needLogin);
   expect(screen.getAllByLabelText(a.password).length).toBeGreaterThan(0);
 });
 
@@ -161,7 +161,7 @@ test("sign-up asks for an email and an optional phone, and a taken name says so"
 
   fireEvent.click(await longButton());
   expect(screen.queryByLabelText(a.email)).toBeNull();
-  fireEvent.click(within(screen.getByText(t.needLogin).closest("form")!).getByRole("button", { name: a.signup }));
+  fireEvent.click(within(screen.getByRole("alert").parentElement!).getByRole("button", { name: a.signup }));
   fireEvent.change(screen.getByLabelText(a.nickname), { target: { value: "satoshi" } });
   fireEvent.change(screen.getByLabelText(a.password), { target: { value: "pw" } });
   expect((screen.getByLabelText(a.email) as HTMLInputElement).required).toBe(true);

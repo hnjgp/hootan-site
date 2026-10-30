@@ -287,7 +287,7 @@
     "ai": "AI Trading Team",
     "you": "you",
     "entry": "Your first position puts you on the table.",
-    "needLogin": "Log in to trade.",
+    "needLogin": "Log in first to join the game.",
     "notRanked": "Not on the table yet"
   },
   "projects": {
