@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { Dictionary } from "@/i18n";
+import type { Dictionary, Locale } from "@/i18n";
 import { AuthForm, type Mode } from "../auth/AuthForm";
 import { useAuth } from "../auth/AuthProvider";
 
 /** The visitor's corner of the header: log-in and sign-up buttons, or their photo and
  * username with a menu to set a photo or log out. */
-export function Account({ t }: { t: Dictionary["auth"] }) {
+export function Account({ t, lang }: { t: Dictionary["auth"]; lang: Locale }) {
   const { me, photo, logOut, setPhoto } = useAuth();
   const [open, setOpen] = useState<Mode | "menu" | null>(null);
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -66,6 +66,11 @@ export function Account({ t }: { t: Dictionary["auth"] }) {
             />
           </label>
           {photoFailed && <p role="alert" className="m-0 px-2 text-[13px] text-accent">{t.errPhoto}</p>}
+          {me.admin && (
+            <a href={`/${lang}/admin`} className="btn chip rounded-lg px-2 py-2 text-[15px] hover:bg-soft">
+              {t.adminLink}
+            </a>
+          )}
           <button
             type="button"
             onClick={() => {

@@ -1,5 +1,7 @@
 """LLM client: budget check, then the call (timeout and retries), then cost recording."""
 
+import logging
+import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from decimal import Decimal
@@ -16,6 +18,8 @@ from app.llm.pricing import cost_usd
 
 # Thinking tokens count toward max_tokens; with default effort they used the whole
 # trading cap and the reply came back empty (real-call probe, 2026-10-25).
+log = logging.getLogger("llm")
+
 REASONING_EFFORT = {"gpt-5-nano": "minimal"}
 
 
@@ -26,7 +30,14 @@ class Completion:
     text: str
     tokens_in: int
     tokens_out: int
+    tokens_cached: int = 0
     cost_usd: Decimal | None = None
+
+
+def cached_tokens(usage) -> int:
+    """Input tokens the provider served from its prompt cache (0 when not reported)."""
+    details = usage.prompt_tokens_details
+    return (details and details.cached_tokens) or 0
 
 
 class LLMClient:
@@ -54,8 +65,9 @@ class LLMClient:
         Usage is committed right away so it counts even if the request fails later.
         """
         await check_budget(session, feature, self.settings)
+        start = time.monotonic()
         result = await self._complete(model, messages, max_tokens)
-        await self._record(session, feature, model, result)
+        await self._record(session, feature, model, result, start)
         return result.text
 
     async def structured[T: BaseModel](
@@ -92,8 +104,9 @@ class LLMClient:
             extra["temperature"] = temperature
         if timeout is not None:
             extra["timeout"] = timeout
+        start = time.monotonic()
         result = await self._complete(model, messages, max_tokens, **extra)
-        await self._record(session, feature, model, result)
+        await self._record(session, feature, model, result, start)
         return schema.model_validate_json(result.text), result
 
     async def stream_chat(
@@ -110,34 +123,60 @@ class LLMClient:
         so the caller must read the stream to the end.
         """
         await check_budget(session, feature, self.settings)
+        start = time.monotonic()
         async for item in self._stream(model, messages, max_tokens):
             if isinstance(item, Completion):
-                await self._record(session, feature, model, item)
+                await self._record(session, feature, model, item, start)
             yield item
 
     async def embed(self, session: AsyncSession, texts: list[str]) -> list[list[float]]:
         """Return one embedding per text, checked and recorded as the embedding feature."""
         await check_budget(session, "embedding", self.settings)
         model = self.settings.model_embed
+        start = time.monotonic()
         vectors, tokens_in = await self._embed(model, texts)
-        await self._record(session, "embedding", model, Completion("", tokens_in, 0))
+        await self._record(
+            session, "embedding", model, Completion("", tokens_in, 0), start
+        )
         return vectors
 
     async def _record(
-        self, session: AsyncSession, feature: str, model: str, result: Completion
+        self,
+        session: AsyncSession,
+        feature: str,
+        model: str,
+        result: Completion,
+        start: float,
     ) -> None:
-        """Store the cost of one call in llm_usage and on the result, then commit."""
-        result.cost_usd = cost_usd(model, result.tokens_in, result.tokens_out)
+        """Store the cost of one call in llm_usage and on the result, commit, and log it."""
+        result.cost_usd = cost_usd(
+            model, result.tokens_in, result.tokens_out, result.tokens_cached
+        )
         session.add(
             LLMUsage(
                 feature=feature,
                 model=model,
                 tokens_in=result.tokens_in,
                 tokens_out=result.tokens_out,
+                tokens_cached=result.tokens_cached,
                 cost_usd=result.cost_usd,
             )
         )
         await session.commit()
+        log.info(
+            "llm call",
+            extra={
+                "fields": {
+                    "feature": feature,
+                    "model": model,
+                    "tokens_in": result.tokens_in,
+                    "tokens_cached": result.tokens_cached,
+                    "tokens_out": result.tokens_out,
+                    "cost_usd": result.cost_usd,
+                    "ms": round((time.monotonic() - start) * 1000),
+                }
+            },
+        )
 
     def _effort(self, model: str) -> dict:
         """Extra request arguments for the model's reasoning effort, if one is set."""
@@ -161,6 +200,7 @@ class LLMClient:
             text=response.choices[0].message.content or "",
             tokens_in=response.usage.prompt_tokens,
             tokens_out=response.usage.completion_tokens,
+            tokens_cached=cached_tokens(response.usage),
         )
 
     async def _stream(
@@ -183,7 +223,9 @@ class LLMClient:
                 yield piece
             if chunk.usage:
                 usage = chunk.usage
-        yield Completion(text, usage.prompt_tokens, usage.completion_tokens)
+        yield Completion(
+            text, usage.prompt_tokens, usage.completion_tokens, cached_tokens(usage)
+        )
 
     async def _embed(
         self, model: str, texts: list[str]

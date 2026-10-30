@@ -1085,6 +1085,47 @@
     "errCode": "The code is wrong or expired.",
     "errEmailTaken": "This email already has an account.",
     "back": "Back to log in",
-    "otherAccount": "Use another account"
+    "otherAccount": "Use another account",
+    "adminLink": "Admin panel"
+  },
+  "admin": {
+    "title": "Admin panel",
+    "back": "Back to the site",
+    "denied": "This page is for the admin only. Log in with the admin account first.",
+    "ai": "AI",
+    "on": "on",
+    "off": "off",
+    "costs": "AI cost (USD)",
+    "today": "Today",
+    "month": "This month",
+    "caps": "Caps",
+    "capMonthly": "Monthly",
+    "capTrading": "Trading per day",
+    "capPublic": "Twin and job fit per day",
+    "activity": "Activity",
+    "counts": {
+      "chats": "Twin messages",
+      "jobfits": "Job-fit checks",
+      "positions": "Positions opened",
+      "players": "New players",
+      "leads": "Emails left"
+    },
+    "meeting": "Last trading meeting",
+    "noMeeting": "No meeting yet",
+    "lastPrice": "Last stored price",
+    "players": "Players",
+    "leads": "Visitor emails",
+    "jobfits": "Latest job-fit checks",
+    "chats": "Latest twin questions",
+    "nickname": "Username",
+    "password": "Password",
+    "email": "Email",
+    "phone": "Phone",
+    "date": "Date",
+    "score": "Score",
+    "question": "Question",
+    "answer": "Answer",
+    "context": "Context",
+    "empty": "Empty"
   }
 }

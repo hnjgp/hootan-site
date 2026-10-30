@@ -70,7 +70,9 @@ async def sign_up(
     price: Annotated[Decimal, Depends(shown_price)],
 ) -> dict:
     """Create an account with 10,000 USD of cash and log it in."""
-    if await by_nickname(session, body.nickname):
+    settings = get_settings()
+    reserved = body.nickname.lower() == settings.admin_nickname.lower()
+    if reserved or await by_nickname(session, body.nickname):
         raise HTTPException(status_code=409, detail="Nickname taken")
     taken = await session.scalar(
         select(Player.id).where(func.lower(Player.email) == body.email.lower())
@@ -78,7 +80,6 @@ async def sign_up(
     if taken:
         raise HTTPException(status_code=409, detail="Email taken")
     check_limit(SIGNUP_LIMITER, request)
-    settings = get_settings()
     player = Player(
         nickname=body.nickname,
         password=body.password,

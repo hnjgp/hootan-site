@@ -12,7 +12,7 @@ const a = getDictionary("en").auth;
 const renderPlay = () =>
   render(
     <AuthProvider>
-      <Account t={a} />
+      <Account t={a} lang="en" />
       <Play t={t} auth={a} lang="en" />
     </AuthProvider>,
   );

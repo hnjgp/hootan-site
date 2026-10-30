@@ -18,6 +18,14 @@ class BudgetExceeded(Exception):
     """AI is switched off or a spending cap is reached; the call must not be made."""
 
 
+def day_and_month_start(now: datetime) -> tuple[datetime, datetime]:
+    """Start of today and of this month on the Asia/Tehran calendar."""
+    day_start = now.astimezone(TEHRAN).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return day_start, day_start.replace(day=1)
+
+
 async def spent_since(
     session: AsyncSession, start: datetime, features: tuple[str, ...] | None = None
 ) -> Decimal:
@@ -39,9 +47,7 @@ async def check_budget(session: AsyncSession, feature: str, settings: Settings) 
     if not settings.ai_enabled:
         raise BudgetExceeded("AI is disabled")
 
-    now = datetime.now(TEHRAN)
-    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    month_start = day_start.replace(day=1)
+    day_start, month_start = day_and_month_start(datetime.now(TEHRAN))
     if await spent_since(session, month_start) >= settings.budget_monthly_usd:
         raise BudgetExceeded("monthly budget reached")
 

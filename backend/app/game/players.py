@@ -27,3 +27,8 @@ async def require_player(
     if player is None:
         raise HTTPException(status_code=401, detail="Log in first")
     return player
+
+
+def is_admin(player: Player) -> bool:
+    """True for the account named ADMIN_NICKNAME (Hootan's own)."""
+    return player.nickname.lower() == get_settings().admin_nickname.lower()

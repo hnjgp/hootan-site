@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.db.session import SessionLocal
 from app.exchange.book import check_triggers, take_snapshots
 from app.llm.client import LLMClient
+from app.logs import setup_logging
 from app.market.collector import collect_price
 from app.market.prices import PriceUnavailable, fetch_btc_price, make_client
 from app.trading.run import claim_scheduled, fail_stale, hold_meeting, trading_day
@@ -57,9 +58,7 @@ async def session_job() -> None:
 
 async def main() -> None:
     """Fail meetings a stopped worker left running, then run the jobs until stopped."""
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
-    )
+    setup_logging()
     # Two lines per 5-second run would be about 35,000 lines a day.
     for name in ("httpx", "httpx2", "apscheduler.executors"):
         logging.getLogger(name).setLevel(logging.WARNING)

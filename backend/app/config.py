@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     secret_key: str = "dev-secret"
     contact_email: str = ""
     admin_token: str = ""
+    # The player account with this nickname is the admin; nobody else can sign up with it.
+    admin_nickname: str = "Hootan"
 
     smtp_host: str = "127.0.0.1"
     smtp_port: int = 1025

@@ -17,3 +17,8 @@ def test_one_million_tokens_each_way():
 def test_unknown_model_fails_loudly():
     with pytest.raises(KeyError):
         cost_usd("no-such-model", 1, 1)
+
+
+def test_cached_input_is_cheaper():
+    # 7000 in (6000 cached), 500 out on gpt-4.1-mini: 1000*0.40 + 6000*0.10 + 500*1.60.
+    assert cost_usd("gpt-4.1-mini", 7000, 500, 6000) == Decimal("0.001800")

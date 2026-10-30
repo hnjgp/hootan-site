@@ -22,6 +22,8 @@ export type Position = {
 };
 export type Me = {
   nickname: string;
+  /** True for Hootan's own account: the header menu links to the admin panel. */
+  admin: boolean;
   avatar: boolean;
   /** The BTC price the numbers below were valued at. */
   price: string;

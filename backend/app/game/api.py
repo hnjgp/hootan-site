@@ -15,7 +15,7 @@ from app.db.models import MarketPrice, Player, Position
 from app.db.session import get_session
 from app.exchange import book, calc
 from app.game.leaderboard import Period, leaderboard, pct
-from app.game.players import current_player, require_player
+from app.game.players import current_player, is_admin, require_player
 from app.market.prices import PriceUnavailable, fetch_btc_price, make_client
 from app.security.rate_limit import RateLimiter
 
@@ -96,6 +96,7 @@ async def me_out(session: AsyncSession, player: Player, price: Decimal) -> dict:
         held = calc.cents(calc.START_USD * price / player.signup_price)
     return {
         "nickname": player.nickname,
+        "admin": is_admin(player),
         "avatar": player.avatar is not None,
         "price": price,
         "cash_usd": calc.cents(mine.cash),

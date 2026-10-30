@@ -9,7 +9,7 @@ export function Header({ lang, t, auth }: { lang: Locale; t: Dictionary["header"
   return (
     <header className="z-20 border-b-[1.5px] border-line bg-head md:sticky md:top-0">
       <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Account t={auth} />
+        <Account t={auth} lang={lang} />
         <div className="inline-flex items-center gap-2 text-[14px] font-semibold text-green md:max-xl:hidden">
           <span className="pulse h-2 w-2 shrink-0 rounded-full bg-green" aria-hidden="true" />
           {t.open}

@@ -175,6 +175,7 @@ class LLMUsage(Base):
     model: Mapped[str] = mapped_column(String(64))
     tokens_in: Mapped[int] = mapped_column(Integer)
     tokens_out: Mapped[int] = mapped_column(Integer)
+    tokens_cached: Mapped[int] = mapped_column(Integer, server_default="0")
     cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6))
 
 

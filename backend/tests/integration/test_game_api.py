@@ -282,3 +282,23 @@ async def test_a_forged_remember_cookie_is_ignored(api, session):
     api.cookies.set("remembered", f"{player.id}.forged")
 
     assert (await api.post("/api/game/login/remembered")).status_code == 404
+
+
+async def test_nobody_can_sign_up_with_the_admin_nickname(api):
+    body = {"nickname": "hootan", "password": "pw", "email": "x@b.com"}
+    response = await api.post("/api/game/players", json=body)
+    assert response.status_code == 409
+
+
+async def test_the_admin_account_opens_the_admin_endpoints(api, session, monkeypatch):
+    await join(api)
+    assert (await api.get("/api/admin/overview")).status_code == 404
+    assert (await api.get("/api/game/me")).json()["admin"] is False
+
+    monkeypatch.setattr(get_settings(), "admin_nickname", "Satoshi")
+    assert (await api.get("/api/game/me")).json()["admin"] is True
+    overview = (await api.get("/api/admin/overview")).json()
+    assert overview["counts"]["players"]["today"] == 1
+    assert "today" in overview["costs"]
+    for path in ("players", "leads", "jobfits", "chats"):
+        assert (await api.get(f"/api/admin/{path}")).status_code == 200
