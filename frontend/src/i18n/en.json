@@ -1126,6 +1126,8 @@
     "question": "Question",
     "answer": "Answer",
     "context": "Context",
-    "empty": "Empty"
+    "empty": "Empty",
+    "who": "Asked by",
+    "guest": "guest"
   }
 }

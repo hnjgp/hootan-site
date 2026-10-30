@@ -25,6 +25,7 @@ export function AdminPanel({ t, lang }: { t: Dictionary["admin"]; lang: Locale }
   const loc = lang === "fa" ? "fa-IR-u-nu-latn" : "en-GB";
   const when = (iso: unknown) => (iso ? new Date(String(iso)).toLocaleString(loc, { dateStyle: "short", timeStyle: "short" }) : "-");
   const usd = (n: number) => `$${n.toFixed(4)}`;
+  const who = (r: Row) => (r.nickname ? `${r.nickname} · ${r.email ?? "-"}` : t.guest);
 
   useEffect(() => {
     Promise.all(PATHS.map((p) => fetch(`/api/admin/${p}`).then((r) => (r.ok ? r.json() : Promise.reject(r.status)))))
@@ -112,7 +113,7 @@ export function AdminPanel({ t, lang }: { t: Dictionary["admin"]; lang: Locale }
           {data.jobfits.map((j, i) => (
             <details key={i} className="rounded-lg border border-line p-2">
               <summary className="cursor-pointer">
-                {t.score} {j.score} · {when(j.created_at)}
+                {t.score} {j.score} · {when(j.created_at)} · <span dir="auto">{who(j)}</span>
               </summary>
               <pre dir="auto" className="m-0 mt-2 max-h-64 overflow-auto text-[13px] whitespace-pre-wrap">
                 {j.jd_text}
@@ -122,7 +123,7 @@ export function AdminPanel({ t, lang }: { t: Dictionary["admin"]; lang: Locale }
         </div>
       </Card>
       <Card title={t.chats}>
-        <Table head={[t.question, t.answer, t.date]} rows={data.chats.map((c) => [c.question, c.answer, when(c.created_at)])} empty={t.empty} />
+        <Table head={[t.who, t.question, t.answer, t.date]} rows={data.chats.map((c) => [who(c), c.question, c.answer, when(c.created_at)])} empty={t.empty} />
       </Card>
     </main>
   );

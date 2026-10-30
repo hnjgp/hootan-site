@@ -222,6 +222,10 @@ class ChatLog(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     visitor_id: Mapped[str] = mapped_column(String(64), index=True)
+    # The logged-in player who asked, if any (shown in the admin panel).
+    player_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("players.id", ondelete="SET NULL")
+    )
     question: Mapped[str] = mapped_column(Text)
     answer: Mapped[str] = mapped_column(Text)
     sources: Mapped[list | None] = mapped_column(JSONB)
@@ -239,6 +243,10 @@ class JobFitRequest(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     visitor_id: Mapped[str] = mapped_column(String(64), index=True)
+    # The logged-in player who asked, if any (shown in the admin panel).
+    player_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("players.id", ondelete="SET NULL")
+    )
     jd_text: Mapped[str] = mapped_column(Text)
     lang: Mapped[str] = mapped_column(String(8))
     score: Mapped[int] = mapped_column(Integer)

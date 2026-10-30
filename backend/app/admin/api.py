@@ -132,29 +132,43 @@ async def leads(session: Session) -> list[dict]:
 
 @router.get("/jobfits")
 async def jobfits(session: Session) -> list[dict]:
-    """The latest job-fit checks with their score and full result."""
-    rows = await session.scalars(
-        select(JobFitRequest).order_by(JobFitRequest.created_at.desc()).limit(LATEST)
+    """The latest job-fit checks with their score, the ad, and who asked if logged in."""
+    rows = await session.execute(
+        select(JobFitRequest, Player.nickname, Player.email)
+        .outerjoin(Player, JobFitRequest.player_id == Player.id)
+        .order_by(JobFitRequest.created_at.desc())
+        .limit(LATEST)
     )
     return [
         {
+            "nickname": nickname,
+            "email": email,
             "score": r.score,
             "lang": r.lang,
             "jd_text": r.jd_text,
             "result": r.result,
             "created_at": r.created_at,
         }
-        for r in rows
+        for r, nickname, email in rows
     ]
 
 
 @router.get("/chats")
 async def chats(session: Session) -> list[dict]:
-    """The latest twin questions and answers."""
-    rows = await session.scalars(
-        select(ChatLog).order_by(ChatLog.created_at.desc()).limit(LATEST)
+    """The latest twin questions and answers, and who asked if logged in."""
+    rows = await session.execute(
+        select(ChatLog, Player.nickname, Player.email)
+        .outerjoin(Player, ChatLog.player_id == Player.id)
+        .order_by(ChatLog.created_at.desc())
+        .limit(LATEST)
     )
     return [
-        {"question": r.question, "answer": r.answer, "created_at": r.created_at}
-        for r in rows
+        {
+            "nickname": nickname,
+            "email": email,
+            "question": r.question,
+            "answer": r.answer,
+            "created_at": r.created_at,
+        }
+        for r, nickname, email in rows
     ]

@@ -5,11 +5,12 @@ import pytest
 from sqlalchemy import select
 
 from app.config import get_settings
-from app.db.models import ChatLog, Lead
+from app.db.models import ChatLog, Lead, Player
 from app.db.session import get_session
 from app.llm.client import get_llm_client
 from app.llm.fake import FakeLLMClient
 from app.main import app
+from app.security.cookie import sign
 from app.twin.api import CHAT_LIMITERS, LEAD_LIMITERS
 from app.twin.ingest import ingest
 from app.twin.prompt import HANDOFF
@@ -144,3 +145,26 @@ async def test_invalid_lead_email_is_rejected(api):
     response = await api.post("/api/leads", json={"email": "abc@", "question": "q"})
 
     assert response.status_code == 422
+
+
+async def test_a_logged_in_visitor_is_shown_beside_the_question_in_the_admin_panel(
+    api, session, monkeypatch
+):
+    player = Player(nickname="visitor", email="v@b.com")
+    session.add(player)
+    await session.commit()
+    api.fake.replies = ["Hootan studied AI at Amirkabir University."]
+    cookie = {"Cookie": f"player={sign(player.id, get_settings())}"}
+
+    await api.post("/api/twin/chat", json={"question": CHUNK}, headers=cookie)
+
+    assert (await session.scalar(select(ChatLog))).player_id == player.id
+    monkeypatch.setattr(get_settings(), "admin_token", "secret")
+    (listed,) = (
+        await api.get("/api/admin/chats", headers={"X-Admin-Token": "secret"})
+    ).json()
+    assert (listed["nickname"], listed["email"], listed["question"]) == (
+        "visitor",
+        "v@b.com",
+        CHUNK,
+    )

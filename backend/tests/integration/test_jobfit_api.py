@@ -6,12 +6,13 @@ from pydantic import ValidationError
 from sqlalchemy import func, select
 
 from app.config import get_settings
-from app.db.models import JobFitRequest, LLMUsage
+from app.db.models import JobFitRequest, LLMUsage, Player
 from app.db.session import get_session
 from app.jobfit.api import JOBFIT_LIMITERS
 from app.llm.client import get_llm_client
 from app.llm.fake import FakeLLMClient
 from app.main import app
+from app.security.cookie import sign
 from app.twin.ingest import ingest
 
 SETTINGS = get_settings().model_copy(update={"ai_enabled": True})
@@ -135,3 +136,23 @@ async def test_invalid_model_reply_is_not_returned_but_its_cost_is_recorded(
     )
     assert usage == 1
     assert await session.scalar(select(func.count(JobFitRequest.id))) == 0
+
+
+async def test_a_logged_in_visitor_is_shown_beside_the_ad_in_the_admin_panel(
+    api, session, monkeypatch
+):
+    player = Player(nickname="recruiter", email="r@corp.com")
+    session.add(player)
+    await session.commit()
+    api.fake.replies = [json.dumps(REPLY)]
+    cookie = {"Cookie": f"player={sign(player.id, get_settings())}"}
+
+    await api.post("/api/jobfit", json={"job_ad": AD, "lang": "en"}, headers=cookie)
+
+    row = await session.scalar(select(JobFitRequest))
+    assert row.player_id == player.id
+    monkeypatch.setattr(get_settings(), "admin_token", "secret")
+    (listed,) = (
+        await api.get("/api/admin/jobfits", headers={"X-Admin-Token": "secret"})
+    ).json()
+    assert (listed["nickname"], listed["email"]) == ("recruiter", "r@corp.com")

@@ -7,8 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import JobFitRequest
+from app.db.models import JobFitRequest, Player
 from app.db.session import get_session
+from app.game.players import current_player
 from app.jobfit.schema import FitResult
 from app.jobfit.service import check_fit
 from app.llm.budget import BudgetExceeded
@@ -38,6 +39,7 @@ async def jobfit(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
     client: Annotated[LLMClient, Depends(get_llm_client)],
+    player: Annotated[Player | None, Depends(current_player)],
 ) -> FitResult:
     """Score the ad, store the request and return the result; 503 when AI is off."""
     try:
@@ -48,6 +50,7 @@ async def jobfit(
     session.add(
         JobFitRequest(
             visitor_id=visitor_id(request, client.settings),
+            player_id=player and player.id,
             jd_text=body.job_ad,
             lang=body.lang,
             score=result.score,

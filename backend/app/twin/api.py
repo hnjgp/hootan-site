@@ -9,8 +9,9 @@ from fastapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import ChatLog, Lead
+from app.db.models import ChatLog, Lead, Player
 from app.db.session import get_session
+from app.game.players import current_player
 from app.llm.budget import BudgetExceeded
 from app.llm.client import Completion, LLMClient, get_llm_client
 from app.security.rate_limit import RateLimiter, limit_by_ip
@@ -144,13 +145,16 @@ async def twin_chat(
     request: Request,
     session: SessionDep,
     client: ClientDep,
+    player: Annotated[Player | None, Depends(current_player)],
 ) -> AsyncIterator[ServerSentEvent]:
     """Events: status, token, sources or handoff, fallback when AI is off, then done.
 
     The done event carries how many questions the visitor has left today.
     """
     log = ChatLog(
-        visitor_id=visitor_id(request, client.settings), question=body.question
+        visitor_id=visitor_id(request, client.settings),
+        player_id=player and player.id,
+        question=body.question,
     )
     history = [t.model_dump() for t in body.history]
     try:
