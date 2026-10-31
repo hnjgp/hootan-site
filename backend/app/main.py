@@ -21,7 +21,7 @@ from app.trading.api import router as trading_router
 from app.twin.api import router as twin_router
 
 setup_logging()
-app = FastAPI(title="hootanseifi.com API")
+app = FastAPI(title="hootanseifi.pro API")
 app.add_middleware(RequestLogMiddleware)
 app.include_router(twin_router)
 app.include_router(jobfit_router)

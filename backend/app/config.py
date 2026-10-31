@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     smtp_port: int = 1025
     smtp_user: str = ""
     smtp_password: str = ""
-    smtp_from: str = "no-reply@hootanseifi.com"
+    smtp_from: str = "no-reply@hootanseifi.pro"
 
     llm_base_url: str = "https://api.avalai.ir/v1"
     llm_api_key: str = ""

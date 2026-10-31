@@ -40,14 +40,14 @@ MAIL = {
         "Your password reset code",
         (
             "Hi {nickname},\n\nYour code is {code}. It works once, for 15 minutes.\n\n"
-            "If you did not ask for it, ignore this email.\n\nhootanseifi.com"
+            "If you did not ask for it, ignore this email.\n\nhootanseifi.pro"
         ),
     ),
     "fa": (
         "کد بازیابی رمز",
         (
             "سلام {nickname}،\n\nکد شما {code} است. فقط یک بار و تا 15 دقیقه کار می‌کند.\n\n"
-            "اگر شما درخواست نکرده‌اید، این ایمیل را نادیده بگیرید.\n\nhootanseifi.com"
+            "اگر شما درخواست نکرده‌اید، این ایمیل را نادیده بگیرید.\n\nhootanseifi.pro"
         ),
     ),
 }
