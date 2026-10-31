@@ -36,8 +36,18 @@ test("the language switch opens the other language and remembers it", async ({ p
   expect((await page.context().cookies()).find((c) => c.name === "lang")?.value).toBe("en");
 });
 
+test("a new visitor gets Persian and light mode, whatever the browser and system prefer", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "en-US", colorScheme: "dark" });
+  const page = await context.newPage();
+  await page.goto("/");
+
+  await expect(page).toHaveURL(/\/fa$/);
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme", "dark");
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe("light");
+  await context.close();
+});
+
 test("the theme button switches to dark and the choice survives a reload", async ({ page }) => {
-  await page.emulateMedia({ colorScheme: "light" });
   await page.goto("/en");
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: en.header.themeLabel }).click();

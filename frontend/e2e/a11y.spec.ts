@@ -2,9 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 for (const lang of ["fa", "en"]) {
-  for (const colorScheme of ["light", "dark"] as const) {
-    test(`home page has no WCAG A or AA violations (${lang}, ${colorScheme})`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme });
+  for (const theme of ["light", "dark"]) {
+    test(`home page has no WCAG A or AA violations (${lang}, ${theme})`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
       await page.goto(`/${lang}`);
       await page.waitForLoadState("networkidle");
 

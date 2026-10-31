@@ -1,12 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { hasLocale } from "./i18n";
 
-/** Pick the visitor's language: saved cookie first, then the browser's Accept-Language. */
+/** Pick the visitor's language: the saved cookie, otherwise Persian. */
 function pickLocale(request: NextRequest) {
   const saved = request.cookies.get("lang")?.value;
-  if (saved && hasLocale(saved)) return saved;
-  const first = request.headers.get("accept-language")?.split(",")[0] ?? "";
-  return first.toLowerCase().startsWith("fa") ? "fa" : "en";
+  return saved && hasLocale(saved) ? saved : "fa";
 }
 
 /** Send any path without /fa or /en in front to the visitor's language. */

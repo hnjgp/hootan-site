@@ -20,26 +20,6 @@
   color-scheme: light;
 }
 
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #15161c;
-    --card: #1f212a;
-    --ink: #ede6d8;
-    --muted: #b5aea1;
-    --line: #cfc7b8;
-    --soft: #2c2f3a;
-    --accent: #f2914f;
-    --paper: #efe5d3;
-    --head: rgba(21, 22, 28, 0.93);
-    --inv: #ede6d8;
-    --invInk: #15161c;
-    --green: #6fd3a8;
-    --blue: #8ab4ec;
-    --input: #15161c;
-    color-scheme: dark;
-  }
-}
 :root[data-theme="dark"] {
   --bg: #15161c;
   --card: #1f212a;
@@ -333,16 +313,6 @@ html {
 :root[data-theme="dark"] .theme-moon,
 :root[data-theme="dark"] .day-only {
   display: none;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-sun,
-  :root:not([data-theme="light"]) .night-only {
-    display: block;
-  }
-  :root:not([data-theme="light"]) .theme-moon,
-  :root:not([data-theme="light"]) .day-only {
-    display: none;
-  }
 }
 
 /* Project diagrams: a packet of data travels along each edge, nodes glow in turn, bars grow and lines draw. */

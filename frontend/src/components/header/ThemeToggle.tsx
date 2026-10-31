@@ -4,10 +4,7 @@
 export function ThemeToggle({ label }: { label: string }) {
   const toggle = () => {
     const root = document.documentElement;
-    const current =
-      root.getAttribute("data-theme") ??
-      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    const next = current === "dark" ? "light" : "dark";
+    const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
     root.setAttribute("data-theme", next);
     localStorage.setItem("theme", next);
     document.cookie = `theme=${next}; path=/; max-age=31536000; SameSite=Lax`;
